@@ -1,0 +1,3001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC RSO Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── BASE ─────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0faf4;color:#1a3a2a;min-height:100vh;display:flex}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:215px;background:linear-gradient(160deg,#064e3b 0%,#065f46 60%,#047857 100%);display:flex;flex-direction:column;z-index:200;box-shadow:3px 0 18px rgba(0,0,0,.2)}
+.sb-logo{padding:22px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-title{font-size:14px;font-weight:700;color:#fff;line-height:1.35}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px}
+.sb-badge{display:inline-block;background:linear-gradient(90deg,#f7971e,#ffd200);color:#1a1a2e;font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;margin-top:7px}
+.nav-menu{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 18px;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;border-left:3px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;border-left-color:#f7971e;font-weight:600}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sb-footer{padding:13px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:10px;color:rgba(255,255,255,.28);line-height:1.6}
+
+/* ── MAIN ────────────────────────────────────────────────── */
+.main{margin-left:215px;flex:1;padding:24px 26px 50px;min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.page-title{font-size:20px;font-weight:700;color:#064e3b}
+.page-sub{font-size:12px;color:#6b7280;margin-top:2px}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-primary{background:linear-gradient(90deg,#f7971e,#ffd200);color:#1a1a2e;box-shadow:0 2px 8px rgba(247,151,30,.3)}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-edit{background:linear-gradient(90deg,#059669,#047857);color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.3)}
+.btn-edit:hover{opacity:.88;transform:translateY(-1px)}
+.btn-teal{background:linear-gradient(90deg,#11998e,#38ef7d);color:#fff;box-shadow:0 2px 8px rgba(17,153,142,.25)}
+.btn-teal:hover{opacity:.88;transform:translateY(-1px)}
+.btn-outline{background:#fff;border:1.5px solid #d1d5db;color:#374151}
+.btn-outline:hover{background:#f3f4f6}
+.btn-red{background:linear-gradient(90deg,#ff416c,#ff4b2b);color:#fff}
+.btn-red:hover{opacity:.88}
+.btn-green{background:linear-gradient(90deg,#11998e,#38ef7d);color:#fff}
+.btn-green:hover{opacity:.88}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:6px}
+.btn-icon{padding:5px 8px;font-size:13px;border-radius:6px;line-height:1}
+
+/* ── PAGES ───────────────────────────────────────────────── */
+.page{display:none}.page.active{display:block}
+
+/* ── KPI CARDS ───────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px;margin-bottom:20px}
+.kpi{border-radius:14px;padding:17px 17px 15px;position:relative;overflow:hidden;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.12);cursor:pointer;transition:transform .15s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi-1{background:linear-gradient(135deg,#f7971e,#ffd200)}
+.kpi-2{background:linear-gradient(135deg,#11998e,#38ef7d)}
+.kpi-3{background:linear-gradient(135deg,#0891b2,#0e7490)}
+.kpi-4{background:linear-gradient(135deg,#f953c6,#b91d73)}
+.kpi-5{background:linear-gradient(135deg,#fc4a1a,#f7b733)}
+.kpi-6{background:linear-gradient(135deg,#065f46,#047857)}
+.kpi-icon{position:absolute;right:13px;top:11px;font-size:28px;opacity:.22}
+.kpi-label{font-size:11px;opacity:.85;margin-bottom:7px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{font-size:25px;font-weight:800;line-height:1.1}
+.kpi-sub{font-size:11px;opacity:.7;margin-top:4px}
+.kpi-edit-hint{font-size:10px;opacity:.55;margin-top:5px}
+
+/* ── CHART CARDS ─────────────────────────────────────────── */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:16px}
+.chart-box,.chart-full{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px}
+.chart-full{margin-bottom:16px}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:13px}
+.chart-title{font-size:14px;font-weight:700;color:#064e3b}
+.chart-subtitle{font-size:11px;color:#9ca3af;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#6b7280;margin-bottom:8px}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ── BADGES ──────────────────────────────────────────────── */
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.b-blue{background:#d1fae5;color:#065f46}.b-green{background:#dcfce7;color:#15803d}
+.b-teal{background:#ccfbf1;color:#0f766e}.b-purple{background:#ede9fe;color:#7c3aed}
+.b-orange{background:#ffedd5;color:#c2410c}.b-pink{background:#fce7f3;color:#be185d}
+.b-yellow{background:#fef9c3;color:#a16207}.b-gray{background:#f3f4f6;color:#374151}
+.b-red{background:#fee2e2;color:#dc2626}.b-indigo{background:#e0e7ff;color:#4338ca}
+
+/* ── TABLES ──────────────────────────────────────────────── */
+.table-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.search-box{display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid #e5e7eb;border-radius:9px;padding:6px 12px}
+.search-box input{border:none;outline:none;font-family:inherit;font-size:13px;color:#1a3a2a;width:160px;background:transparent}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:4px}
+table{width:100%;font-size:13px;border-collapse:collapse}
+thead{background:linear-gradient(90deg,#065f46,#047857)}
+th{font-size:11px;font-weight:600;color:rgba(255,255,255,.85);text-align:left;padding:10px 12px;text-transform:uppercase;letter-spacing:.05em}
+td{padding:8px 12px;border-bottom:1px solid #f3f4f6;color:#1a3a2a;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f0fdf4}
+.amt{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.actions-cell{display:flex;gap:4px;justify-content:flex-end}
+
+/* ── HORIZONTAL BARS ─────────────────────────────────────── */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:12px;color:#374151;width:105px;text-align:right;flex-shrink:0;font-weight:500}
+.bar-track{flex:1;background:#f3f4f6;border-radius:20px;height:14px;overflow:hidden}
+.bar-fill{height:14px;border-radius:20px}
+.bar-val{font-size:12px;color:#1a1a2e;width:70px;flex-shrink:0;font-weight:700}
+
+/* ── EDIT MODAL ──────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:18px;width:600px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:22px 24px 0}
+.modal-head h3{font-size:17px;font-weight:700}
+.modal-close-btn{background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:4px}
+.modal-close-btn:hover{color:#374151}
+.modal-body{padding:18px 24px 20px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 24px 20px;display:flex;gap:8px;border-top:1px solid #f3f4f6;flex-wrap:wrap}
+
+/* form fields */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-family:inherit;color:#1a3a2a;outline:none;transition:border .15s}
+.form-input:focus{border-color:#059669}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* edit table inside modal */
+.edit-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px}
+.edit-table{width:100%;font-size:12px;border-collapse:collapse}
+.edit-table thead{background:#f8fafc}
+.edit-table th{padding:8px 10px;text-align:left;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;text-transform:uppercase;font-size:10px;letter-spacing:.04em}
+.edit-table td{padding:6px 8px;border-bottom:1px solid #f3f4f6;vertical-align:middle}
+.edit-table tr:last-child td{border-bottom:none}
+.edit-table input,.edit-table select{width:100%;padding:4px 8px;border:1.5px solid transparent;border-radius:6px;font-size:12px;font-family:inherit;background:transparent;outline:none;color:#1a3a2a}
+.edit-table input:focus,.edit-table select:focus{border-color:#059669;background:#fff}
+.edit-table tr:hover input,.edit-table tr:hover select{background:#f0fdf4}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast{position:fixed;bottom:26px;right:26px;background:linear-gradient(90deg,#065f46,#047857);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(8px);transition:all .28s;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── SECTION TITLE ───────────────────────────────────────── */
+.section-title{font-size:11px;font-weight:700;color:#059669;margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em}
+
+/* ── PRINT ───────────────────────────────────────────────── */
+@media print{
+  .sidebar,.topbar-actions,.btn,.table-toolbar button,.modal-overlay,.toast,.actions-cell,.edit-hint{display:none!important}
+  .main{margin-left:0;padding:10px}
+  .page{display:block!important}
+  body{background:#fff;display:block}
+  .chart-box,.chart-full{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+  .kpi{color:#000!important;background:#f8f8f8!important;border:1px solid #ddd}
+}
+@media(max-width:700px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:14px}
+  .chart-row{grid-template-columns:1fr}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+}
+
+/* ── ENHANCED FEATURES CSS ─────────────────────────────── */
+/* Inline cell edit */
+td.editable-cell{cursor:pointer;position:relative}
+td.editable-cell:hover::after{content:'✏';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:10px;opacity:.4;pointer-events:none}
+td.editable-cell input.cell-input{width:100%;border:none;border-bottom:2px solid #059669;outline:none;font-size:13px;font-family:inherit;background:transparent;padding:1px 2px;color:#1a1a2e}
+
+/* Quick-add row bar */
+.quick-add-bar{display:flex;gap:6px;align-items:center;padding:8px 10px;background:#f8fafc;border:1.5px dashed #d1d5db;border-radius:10px;margin-top:8px;flex-wrap:wrap}
+.quick-add-bar input,.quick-add-bar select{padding:5px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:inherit;outline:none;color:#1a3a2a;background:#fff}
+.quick-add-bar input:focus,.quick-add-bar select:focus{border-color:#059669}
+.quick-add-bar input[type="text"]{flex:1;min-width:100px}
+.quick-add-bar .qa-label{font-size:11px;font-weight:600;color:#9ca3af;white-space:nowrap}
+.qa-toggle{font-size:12px;color:#059669;cursor:pointer;font-weight:600;padding:4px 8px;border-radius:6px;background:#d1fae5;border:none;font-family:inherit}
+.qa-toggle:hover{background:#a7f3d0}
+
+/* Bulk select */
+.row-check{width:15px;height:15px;cursor:pointer;accent-color:#059669}
+.bulk-bar{display:none;align-items:center;gap:8px;padding:6px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;margin-bottom:8px;font-size:12px;font-weight:600;color:#92400e}
+.bulk-bar.visible{display:flex}
+
+/* Column toggle panel */
+.col-toggle-panel{display:none;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.col-toggle-panel.open{display:flex}
+.col-toggle-panel label{display:flex;align-items:center;gap:5px;font-size:12px;color:#374151;cursor:pointer;padding:3px 8px;border-radius:6px;background:#f9fafb;border:1px solid #e5e7eb;user-select:none}
+.col-toggle-panel label:hover{background:#f3f4f6}
+.col-toggle-panel input[type=checkbox]{accent-color:#059669}
+
+/* Sort indicators */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{background:rgba(255,255,255,.1)}
+th.sort-asc::after{content:' ▲';font-size:9px;opacity:.8}
+th.sort-desc::after{content:' ▼';font-size:9px;opacity:.8}
+
+/* Drag handles */
+.drag-handle{cursor:grab;color:#d1d5db;font-size:14px;padding:0 4px;user-select:none}
+.drag-handle:hover{color:#059669}
+tr.drag-over{background:#d1fae5!important}
+
+/* Row count badge */
+.row-count-badge{font-size:11px;color:#9ca3af;background:#f3f4f6;padding:3px 8px;border-radius:12px;font-weight:500}
+
+/* Find & replace panel */
+.fnr-panel{display:none;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px;gap:8px;align-items:center;flex-wrap:wrap}
+.fnr-panel.open{display:flex}
+.fnr-panel input{padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:inherit;outline:none;width:160px}
+.fnr-panel input:focus{border-color:#059669}
+
+/* Add column panel */
+.add-col-panel{display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 12px;margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap}
+.add-col-panel.open{display:flex}
+.add-col-panel input{padding:5px 9px;border:1.5px solid #86efac;border-radius:6px;font-size:12px;font-family:inherit;outline:none;width:150px}
+
+/* KPI add button */
+.kpi-add{border-radius:14px;padding:17px 17px 15px;background:#f8fafc;border:2px dashed #d1d5db;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:#9ca3af;font-size:13px;font-weight:600;gap:6px}
+.kpi-add:hover{border-color:#059669;background:#d1fae5;color:#059669}
+
+/* Undo bar */
+.undo-bar{display:none;position:fixed;bottom:70px;right:26px;background:#065f46;color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500;z-index:9998;gap:10px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.undo-bar.show{display:flex}
+.undo-btn{background:#f7971e;color:#1a1a2e;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* Add year styled */
+.add-year-panel{display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:8px;padding:10px 12px;margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap}
+.add-year-panel.open{display:flex}
+.add-year-panel input{padding:5px 9px;border:1.5px solid #fed7aa;border-radius:6px;font-size:12px;font-family:inherit;outline:none;width:100px}
+
+/* Edit table duplicate btn */
+.btn-dup{background:linear-gradient(90deg,#34d399,#059669);color:#fff;box-shadow:0 2px 6px rgba(5,150,105,.25)}
+.btn-dup:hover{opacity:.88}
+
+/* Rename column panel */
+.rename-col-panel{display:none;background:#fdf2f8;border:1.5px solid #f9a8d4;border-radius:8px;padding:10px 12px;margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap}
+.rename-col-panel.open{display:flex}
+.rename-col-panel input{padding:5px 9px;border:1.5px solid #f9a8d4;border-radius:6px;font-size:12px;font-family:inherit;outline:none;width:140px}
+
+/* Modal wide */
+.modal-xl{width:900px!important}
+
+/* Responsive toolbar */
+@media(max-width:700px){
+  .quick-add-bar{flex-direction:column;align-items:stretch}
+  .quick-add-bar input,.quick-add-bar select{width:100%!important}
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   AUTH SYSTEM CSS
+   ══════════════════════════════════════════════════════════ */
+#authOverlay{position:fixed;inset:0;background:linear-gradient(135deg,#064e3b 0%,#065f46 50%,#047857 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.auth-card{background:#fff;border-radius:20px;padding:36px 40px 32px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.auth-logo{text-align:center;margin-bottom:22px}
+.auth-logo-icon{font-size:42px;line-height:1}
+.auth-logo h1{font-size:18px;font-weight:800;color:#064e3b;margin-top:8px;line-height:1.3}
+.auth-logo p{font-size:12px;color:#6b7280;margin-top:4px}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.auth-field input{width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;color:#1a3a2a;outline:none;transition:border .15s}
+.auth-field input:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.1)}
+.auth-btn{width:100%;padding:12px;background:linear-gradient(90deg,#059669,#047857);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity .15s}
+.auth-btn:hover{opacity:.88}
+.auth-err{background:#fee2e2;color:#dc2626;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;margin-top:10px;display:none;text-align:center}
+.auth-err.show{display:block}
+.auth-loading{color:#059669;font-size:12px;text-align:center;margin-top:8px;display:none}
+.auth-loading.show{display:block}
+/* ── Password eye toggle ─────────────────────────────────── */
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:42px!important}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#9ca3af;font-size:18px;line-height:1;transition:color .15s;user-select:none}
+.pw-eye:hover{color:#059669}
+
+
+/* Role badge in sidebar */
+.sb-user{padding:10px 18px 0;display:flex;align-items:center;gap:8px}
+.sb-user-name{font-size:12px;font-weight:700;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-role-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;white-space:nowrap}
+.role-superadmin{background:#f7971e;color:#1a1a2e}
+.role-admin{background:#38ef7d;color:#064e3b}
+.role-viewer{background:rgba(255,255,255,.2);color:#fff}
+
+/* Logout button in sidebar */
+.sb-logout{display:flex;align-items:center;gap:7px;padding:9px 18px;cursor:pointer;color:rgba(255,100,100,.8);font-size:12px;font-weight:600;border:none;background:none;font-family:inherit;width:100%;text-align:left;transition:all .15s;margin-bottom:4px}
+.sb-logout:hover{background:rgba(255,100,100,.1);color:#ff6b6b}
+
+/* User Manager Panel (superadmin only) */
+.user-mgr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:16px}
+.user-mgr-overlay.open{display:flex}
+.user-mgr{background:#fff;border-radius:18px;width:560px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.user-mgr-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 0}
+.user-mgr-head h3{font-size:16px;font-weight:700;color:#064e3b}
+.user-mgr-body{padding:16px 24px 20px;overflow-y:auto;flex:1}
+.user-mgr-foot{padding:12px 24px 18px;border-top:1px solid #f3f4f6;display:flex;gap:8px;flex-wrap:wrap}
+.user-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center;padding:8px;border-radius:8px;background:#f8fafc;margin-bottom:6px;border:1px solid #e5e7eb}
+.user-row input,.user-row select{padding:6px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff}
+.user-row input:focus,.user-row select:focus{border-color:#059669}
+.user-row-head{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;padding:0 8px 4px;display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px}
+
+/* Role-gated elements */
+[data-role-hide]{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH OVERLAY ═══════════════ -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🔬</div>
+      <h1>UC Research Services<br>Office Dashboard</h1>
+      <p>University of the Cordilleras</p>
+    </div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="pw-eye" onclick="togglePwEye()" id="pwEyeBtn" title="Show/hide password">👁</button>
+      </div>
+    </div>
+    <button class="auth-btn" onclick="doLogin()">Sign In →</button>
+    <div class="auth-err" id="authErr">Incorrect username or password.</div>
+    <div class="auth-loading" id="authLoading">🔄 Checking credentials…</div>
+  </div>
+</div>
+
+<!-- ═══════════════ USER MANAGER MODAL (superadmin) ═══════════════ -->
+<div class="user-mgr-overlay" id="userMgrOverlay">
+  <div class="user-mgr">
+    <div class="user-mgr-head">
+      <h3>👥 Manage User Accounts</h3>
+      <button class="modal-close-btn" onclick="closeUserMgr()">✕</button>
+    </div>
+    <div class="user-mgr-body">
+      <p style="font-size:12px;color:#6b7280;margin-bottom:12px">
+        Add, edit or remove accounts. Changes apply immediately for this session.<br>
+        <strong>To save permanently:</strong> click <em>Export as snippet</em>, then copy the text into the <code>AUTH_USERS</code> section at the top of <code>index.html</code>.
+      </p>
+      <div class="user-row-head"><span>Username</span><span>Password</span><span>Role</span><span></span></div>
+      <div id="userListBody"></div>
+    </div>
+    <div class="user-mgr-foot">
+      <button class="btn btn-green btn-sm" onclick="addUserRow()">＋ Add User</button>
+      <button class="btn btn-edit btn-sm" onclick="saveUserMgr()">💾 Save to Session</button>
+      <button class="btn btn-teal btn-sm" onclick="exportUsersJSON()">⬇ Export as snippet</button>
+      <button class="btn btn-outline btn-sm" onclick="closeUserMgr()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-title">UC Research<br>Services Office</div>
+    <div class="sb-sub">Interactive Dashboard · 2019–2026</div>
+    <div class="sb-badge">RSO</div>
+  </div>
+  <div class="sb-user" id="sbUserInfo">
+    <div style="flex:1"><div class="sb-user-name" id="sbUserName">–</div></div>
+    <div class="sb-role-badge role-viewer" id="sbRoleBadge">viewer</div>
+  </div>
+  <nav class="nav-menu">
+    <div class="nav-item active" onclick="switchTab('overview',this)"><span class="nav-icon">📊</span> Overview</div>
+    <div class="nav-item" onclick="switchTab('grants',this)"><span class="nav-icon">💰</span> Grants</div>
+    <div class="nav-item" onclick="switchTab('capacity',this)"><span class="nav-icon">🎓</span> Capacity Building</div>
+    <div class="nav-item" onclick="switchTab('presentations',this)"><span class="nav-icon">📄</span> Presentations</div>
+    <div class="nav-item" onclick="switchTab('tracker',this)"><span class="nav-icon">🎯</span> DOST-GIA Tracker</div>
+    <div class="nav-item" onclick="switchTab('rsoservices',this)"><span class="nav-icon">🛎️</span> RSO Services</div>
+  </nav>
+  <div id="sbAdminNav" style="display:none;border-top:1px solid rgba(255,255,255,.07);padding:6px 0">
+    <div class="nav-item" onclick="openUserMgr()" style="color:rgba(255,255,255,.6);font-size:12px"><span class="nav-icon">👥</span> Manage Users</div>
+  </div>
+  <button class="sb-logout" onclick="doLogout()">🔴 Logout</button>
+  <div class="sb-footer">University of the Cordilleras<br>Baguio City, Philippines</div>
+</aside>
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- Edit Grants Modal -->
+<div class="modal-overlay" id="modalGrants">
+  <div class="modal">
+    <div class="modal-head"><h3>✏️ Edit Grants Data</h3><button class="modal-close-btn" onclick="closeModal('modalGrants')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Edit cells directly. Add new rows or delete existing ones. Changes reflect live on the dashboard.</p>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-green btn-sm" onclick="addGrantRow()">＋ Add Row</button>
+        <button class="btn btn-dup btn-sm" onclick="dupGrantRow()">⧉ Duplicate Last</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('grantsAddColPanel')">＋ Add Column</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('grantsRenamePanel')">✏ Rename Column</button>
+        <span id="grantsRowCount" class="row-count-badge"></span>
+      </div>
+      <div class="add-col-panel" id="grantsAddColPanel">
+        <span style="font-size:12px;font-weight:600;color:#15803d">New column name:</span>
+        <input type="text" id="grantsNewColName" placeholder="e.g. Remarks">
+        <button class="btn btn-green btn-sm" onclick="addGrantCol()">Add</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('grantsAddColPanel')">Cancel</button>
+      </div>
+      <div class="rename-col-panel" id="grantsRenamePanel">
+        <span style="font-size:12px;font-weight:600;color:#be185d">Col index (0=seq,1=title…):</span>
+        <input type="number" id="grantsRenameIdx" placeholder="1" style="width:60px">
+        <input type="text" id="grantsRenameVal" placeholder="New name">
+        <button class="btn btn-sm" style="background:#f9a8d4;color:#be185d" onclick="renameGrantCol()">Rename</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('grantsRenamePanel')">Cancel</button>
+      </div>
+      <div class="edit-table-wrap">
+        <table class="edit-table">
+          <thead><tr><th>#</th><th>Project Title</th><th>Agency</th><th>Year</th><th>Amount (₱)</th><th></th></tr></thead>
+          <tbody id="editGrantsBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="saveGrants()">💾 Save & Update Dashboard</button>
+      <button class="btn btn-outline" onclick="closeModal('modalGrants')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit KPI Modal -->
+<div class="modal-overlay" id="modalKPI">
+  <div class="modal" style="width:420px">
+    <div class="modal-head"><h3>✏️ Edit KPI Card</h3><button class="modal-close-btn" onclick="closeModal('modalKPI')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Card Label</label><input class="form-input" id="kpiLabel" placeholder="e.g. Total Grant Funding"></div>
+      <div class="form-group"><label class="form-label">Value</label><input class="form-input" id="kpiValue" placeholder="e.g. ₱126.9M"></div>
+      <div class="form-group"><label class="form-label">Sub-text</label><input class="form-input" id="kpiSub" placeholder="e.g. 19 funded projects"></div>
+      <div class="form-group"><label class="form-label">Icon (emoji)</label><input class="form-input" id="kpiIcon" placeholder="e.g. 💰" style="font-size:20px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="saveKPI()">💾 Save Card</button>
+      <button class="btn btn-outline" onclick="closeModal('modalKPI')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit CB Modal -->
+<div class="modal-overlay" id="modalCB">
+  <div class="modal" style="width:700px">
+    <div class="modal-head"><h3>✏️ Edit Capacity Building Data</h3><button class="modal-close-btn" onclick="closeModal('modalCB')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Edit cells directly. Add or delete rows as needed.</p>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-green btn-sm" onclick="addCBRow()">＋ Add Row</button>
+        <button class="btn btn-dup btn-sm" onclick="dupCBRow()">⧉ Duplicate Last</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('cbAddColPanel')">＋ Add Column</button>
+        <span id="cbRowCount" class="row-count-badge"></span>
+      </div>
+      <div class="add-col-panel" id="cbAddColPanel">
+        <span style="font-size:12px;font-weight:600;color:#15803d">New column name:</span>
+        <input type="text" id="cbNewColName" placeholder="e.g. Notes">
+        <button class="btn btn-green btn-sm" onclick="addCBCol()">Add</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('cbAddColPanel')">Cancel</button>
+      </div>
+      <div class="edit-table-wrap">
+        <table class="edit-table">
+          <thead><tr><th>Year</th><th>Date</th><th>Activity</th><th>Venue</th><th>Participants</th><th>Report?</th><th></th></tr></thead>
+          <tbody id="editCBBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="saveCB()">💾 Save & Update Dashboard</button>
+      <button class="btn btn-outline" onclick="closeModal('modalCB')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Presentations Modal -->
+<div class="modal-overlay" id="modalPres">
+  <div class="modal" style="width:750px">
+    <div class="modal-head"><h3>✏️ Edit Presentations & Publications</h3><button class="modal-close-btn" onclick="closeModal('modalPres')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Edit cells directly. Add or delete rows as needed.</p>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-green btn-sm" onclick="addPresRow()">＋ Add Row</button>
+        <button class="btn btn-dup btn-sm" onclick="dupPresRow()">⧉ Duplicate Last</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('presAddColPanel')">＋ Add Column</button>
+        <span id="presRowCount" class="row-count-badge"></span>
+      </div>
+      <div class="add-col-panel" id="presAddColPanel">
+        <span style="font-size:12px;font-weight:600;color:#15803d">New column name:</span>
+        <input type="text" id="presNewColName" placeholder="e.g. Conference">
+        <button class="btn btn-green btn-sm" onclick="addPresCol()">Add</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('presAddColPanel')">Cancel</button>
+      </div>
+      <div class="edit-table-wrap">
+        <table class="edit-table">
+          <thead><tr><th>Year</th><th>Researcher</th><th>Title</th><th>Dept</th><th>Subsidy (₱)</th><th>Status</th><th></th></tr></thead>
+          <tbody id="editPresBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="savePres()">💾 Save & Update Dashboard</button>
+      <button class="btn btn-outline" onclick="closeModal('modalPres')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit RSO Services Modal -->
+<div class="modal-overlay" id="modalRSO">
+  <div class="modal" style="width:720px">
+    <div class="modal-head"><h3>✏️ Edit RSO Services Data</h3><button class="modal-close-btn" onclick="closeModal('modalRSO')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Edit cells directly. Add or delete rows as needed. Changes reflect live on the dashboard.</p>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-green btn-sm" onclick="addRSORow()">＋ Add Row</button>
+        <button class="btn btn-dup btn-sm" onclick="dupRSORow()">⧉ Duplicate Last</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('rsoAddColPanel')">＋ Add Column</button>
+        <span id="rsoRowCount" class="row-count-badge"></span>
+      </div>
+      <div class="add-col-panel" id="rsoAddColPanel">
+        <span style="font-size:12px;font-weight:600;color:#15803d">New column name:</span>
+        <input type="text" id="rsoNewColName" placeholder="e.g. Remarks">
+        <button class="btn btn-green btn-sm" onclick="addRSOCol()">Add</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('rsoAddColPanel')">Cancel</button>
+      </div>
+      <div class="edit-table-wrap">
+        <table class="edit-table">
+          <thead><tr><th>Year</th><th>Date</th><th>Service Availed</th><th>Title of Study</th><th>College</th><th></th></tr></thead>
+          <tbody id="editRSOBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="saveRSO()">💾 Save & Update Dashboard</button>
+      <button class="btn btn-outline" onclick="closeModal('modalRSO')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tracker Edit Modal -->
+<div class="modal-overlay" id="modalTrackerEdit">
+  <div class="modal" style="width:820px;max-width:98vw">
+    <div class="modal-head"><h3>✏️ Edit DOST-GIA Tracker Data</h3><button class="modal-close-btn" onclick="closeModal('modalTrackerEdit')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:10px">Edit cells directly. Format: <strong>A/S/F</strong> (e.g. <code>10/8/3</code>) or just <strong>S/F</strong> (e.g. <code>5/1</code>) or <strong>–</strong> for none. Add or remove rows as needed.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-green btn-sm" onclick="addTrackerRow()">＋ Add College Row</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('addYearPanel')">＋ Add Year Column</button>
+        <button class="btn btn-dup btn-sm" onclick="dupTrackerRow()">⧉ Duplicate Last Row</button>
+        <span id="trackerRowCount" class="row-count-badge"></span>
+      </div>
+      <div class="add-year-panel" id="addYearPanel">
+        <span style="font-size:12px;font-weight:600;color:#c2410c">Year to add:</span>
+        <input type="number" id="addYearInput" placeholder="e.g. 2026" min="2000" max="2050">
+        <button class="btn btn-sm" style="background:#fed7aa;color:#c2410c" onclick="addTrackerYearStyled()">Add Year</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('addYearPanel')">Cancel</button>
+      </div>
+      <div class="edit-table-wrap" id="trackerEditWrap">
+        <table class="edit-table" id="trackerEditTable">
+          <thead id="trackerEditHead"></thead>
+          <tbody id="trackerEditBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#9ca3af">
+        💡 Format per cell: <strong>A/S/F</strong> = Attended/Submitted/Funded (e.g. <code>10/8/3</code>), <strong>S/F</strong> = Submitted/Funded only (e.g. <code>5/1</code>), <strong>S</strong> = Submitted only, <strong>–</strong> or blank = no participation
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="saveTrackerEdit()">💾 Save & Update Dashboard</button>
+      <button class="btn btn-outline" onclick="closeModal('modalTrackerEdit')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Import Modal -->
+<div class="modal-overlay" id="modalCSVImport">
+  <div class="modal" style="width:560px">
+    <div class="modal-head"><h3>📂 Import Tracker from CSV</h3><button class="modal-close-btn" onclick="closeModal('modalCSVImport')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Upload or paste a CSV exported from this tracker. The first column must be <strong>COLLEGE</strong>, subsequent columns are years. Values use <strong>A/S/F</strong> or <strong>S/F</strong> format. The last two columns (TOTAL S, TOTAL F) are ignored on import.</p>
+      <div class="form-group">
+        <label class="form-label">Upload CSV File</label>
+        <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVFile(event)" style="font-size:13px;padding:8px;border:1.5px dashed #d1d5db;border-radius:9px;width:100%;background:#fafbff;cursor:pointer">
+      </div>
+      <div style="text-align:center;color:#9ca3af;font-size:12px;margin:4px 0 10px">— or paste CSV text below —</div>
+      <div class="form-group">
+        <label class="form-label">Paste CSV Text</label>
+        <textarea id="csvPasteArea" class="form-input" style="height:140px;font-family:monospace;font-size:12px;resize:vertical" placeholder="COLLEGE,2020,2021,2022,2023,2024,2025&#10;CAS,–,1,2,–,–,–&#10;CBA,5/5,–,1/1,..."></textarea>
+      </div>
+      <div id="csvPreviewMsg" style="font-size:12px;color:#11998e;margin-top:4px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-edit" onclick="importCSV()">✅ Import & Apply</button>
+      <button class="btn btn-outline" onclick="closeModal('modalCSVImport')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup / Restore Modal -->
+<div class="modal-overlay" id="modalBackup">
+  <div class="modal" style="width:480px">
+    <div class="modal-head"><h3>💾 Backup & Restore</h3><button class="modal-close-btn" onclick="closeModal('modalBackup')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Save a complete snapshot of all dashboard data. Restore it at any time — even after accidental resets.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <button class="btn btn-teal" style="justify-content:center" onclick="downloadBackup()">⬇ Download Full Backup (JSON)</button>
+        <button class="btn btn-edit" style="justify-content:center" onclick="downloadTrackerCSV()">⬇ Download Tracker CSV Only</button>
+        <button class="btn btn-primary" style="justify-content:center" onclick="downloadHTML()">⬇ Download Dashboard as HTML</button>
+      </div>
+      <hr style="border:none;border-top:1px solid #f3f4f6;margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">🔁 Restore from Backup JSON</label>
+        <input type="file" id="restoreFileInput" accept=".json" onchange="handleRestoreFile(event)" style="font-size:13px;padding:8px;border:1.5px dashed #d1d5db;border-radius:9px;width:100%;background:#fafbff;cursor:pointer">
+      </div>
+      <div id="restoreMsg" style="font-size:12px;margin-top:6px"></div>
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-top:10px">
+        ⚠️ <strong>Restore will overwrite all current data.</strong> Download a backup first if unsure.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modalBackup')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Download Modal -->
+<div class="modal-overlay" id="modalDownload">
+  <div class="modal" style="width:400px">
+    <div class="modal-head"><h3>📥 Download Report</h3><button class="modal-close-btn" onclick="closeModal('modalDownload')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:18px">Export current data from the active tab.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-teal" style="justify-content:center" onclick="exportCSV()">⬇ Export as CSV (Excel)</button>
+        <button class="btn btn-edit" style="justify-content:center" onclick="exportJSON()">⬇ Export as JSON</button>
+        <button class="btn btn-outline" style="justify-content:center" onclick="printReport()">🖨 Print / Save as PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">📊 Overview</div>
+      <div class="page-sub">University of the Cordilleras – Research Services Office</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="printReport()">🖨 Print</button>
+      <button class="btn btn-primary" onclick="openModal('modalDownload')">📥 Download</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ OVERVIEW ══════════════ -->
+  <div id="overview" class="page active">
+    <div class="kpi-grid" id="overviewKPIs">
+      <!-- rendered by JS -->
+    </div>
+    <div style="text-align:right;margin-top:-10px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:11px;color:#9ca3af">💡 Click any card to edit it</span>
+      <button class="btn btn-green btn-sm" onclick="addKPICard()">＋ Add KPI Card</button>
+      <button class="btn btn-red btn-sm" onclick="removeLastKPICard()">－ Remove Last</button>
+    </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-full" style="margin-bottom:0">
+        <div class="chart-header">
+          <div><div class="chart-title">Grant Funding by Year (₱M)</div><div class="chart-subtitle">Local grants secured annually</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalGrants')">✏️ Edit Grants</button>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="fundingByYear"></canvas></div>
+      </div>
+      <div class="chart-full" style="margin-bottom:0">
+        <div class="chart-header">
+          <div><div class="chart-title">Activities &amp; Presentations Trend</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalCB')">✏️ Edit CB</button>
+        </div>
+        <div class="legend">
+          <span><span class="legend-sq" style="background:#667eea"></span>CB Activities</span>
+          <span><span class="legend-sq" style="background:#f7971e"></span>Presentations</span>
+        </div>
+        <div style="position:relative;height:185px"><canvas id="trendCombo"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Agency Share of Funding</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalGrants')">✏️ Edit</button>
+        </div>
+        <div style="position:relative;height:230px"><canvas id="overviewPie"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Subsidy by Department</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalPres')">✏️ Edit</button>
+        </div>
+        <div id="overviewDeptBars" style="padding-top:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ GRANTS ══════════════ -->
+  <div id="grants" class="page">
+    <div class="kpi-grid">
+      <div class="kpi kpi-1"><div class="kpi-icon">💵</div><div class="kpi-label">Total Secured</div><div class="kpi-value" id="gKPI1">₱126.9M</div><div class="kpi-sub">All local grants</div></div>
+      <div class="kpi kpi-2"><div class="kpi-icon">🥇</div><div class="kpi-label">Largest Award</div><div class="kpi-value" id="gKPI2">₱26.4M</div><div class="kpi-sub">BOONDOCK – DOST PCIERRD</div></div>
+      <div class="kpi kpi-3"><div class="kpi-icon">🏢</div><div class="kpi-label">Top Agency</div><div class="kpi-value" id="gKPI3" style="font-size:15px;margin-top:4px">DOST PCIERRD</div><div class="kpi-sub">₱82.8M total</div></div>
+      <div class="kpi kpi-5"><div class="kpi-icon">📅</div><div class="kpi-label">Peak Year</div><div class="kpi-value" id="gKPI4">2021</div><div class="kpi-sub" id="gKPI4sub">₱49.4M received</div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Grants by Year (₱M)</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalGrants')">✏️ Edit</button>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="grantsYearChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header"><div><div class="chart-title">Agency Distribution</div></div></div>
+        <div style="position:relative;height:220px"><canvas id="grantsPie"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-full">
+      <div class="chart-header"><div><div class="chart-title">Funding by Agency</div></div></div>
+      <div id="agencyBars"></div>
+    </div>
+    <div class="section-title">All Funded Projects</div>
+    <div class="table-toolbar">
+      <div class="search-box">🔍 <input type="text" id="grantsSearch" placeholder="Search…" oninput="filterGrants()"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-edit" onclick="openModal('modalGrants')">✏️ Edit Data</button>
+        <button class="btn btn-teal" onclick="exportTableCSV('grantsTable','Grants')">⬇ CSV</button>
+      </div>
+    </div>
+    <div id="grantsColPanel" class="col-toggle-panel"></div>
+    <div id="grantsFnrPanel" class="fnr-panel">
+      <span style="font-size:12px;font-weight:600;color:#374151">Find:</span>
+      <input type="text" id="grantsFnrFind" placeholder="Find text…">
+      <span style="font-size:12px;font-weight:600;color:#374151">Replace:</span>
+      <input type="text" id="grantsFnrReplace" placeholder="Replace with…">
+      <button class="btn btn-edit btn-sm" onclick="doFnR('grants')">Replace All</button>
+      <button class="btn btn-outline btn-sm" onclick="togglePanel('grantsFnrPanel')">Close</button>
+    </div>
+    <div id="grantsBulkBar" class="bulk-bar">
+      <input type="checkbox" id="grantsSelectAll" onchange="toggleSelectAll('grants',this.checked)"> Select All &nbsp;
+      <button class="btn btn-red btn-sm" onclick="bulkDelete('grants')">🗑 Delete Selected</button>
+    </div>
+    <div class="table-wrap"><table id="grantsTable">
+      <thead><tr><th>#</th><th>Project Title</th><th>Agency</th><th>Year</th><th style="text-align:right">Amount (₱)</th></tr></thead>
+      <tbody id="grantsTableBody"></tbody>
+    </table></div>
+    <div style="margin-top:8px">
+      <button class="qa-toggle" onclick="toggleQuickAdd('grants')">＋ Quick Add Row</button>
+      <div id="grantsQA" style="display:none">
+        <div class="quick-add-bar" style="margin-top:6px">
+          <span class="qa-label">Title:</span><input type="text" id="qaGrantTitle" placeholder="Project title" style="min-width:140px">
+          <span class="qa-label">Agency:</span><input type="text" id="qaGrantAgency" placeholder="Agency">
+          <span class="qa-label">Year:</span><input type="number" id="qaGrantYear" placeholder="2026" style="width:70px">
+          <span class="qa-label">₱:</span><input type="number" id="qaGrantAmount" placeholder="0" style="width:100px">
+          <button class="btn btn-green btn-sm" onclick="quickAddGrant()">Add ✓</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleQuickAdd('grants')">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CAPACITY BUILDING ══════════════ -->
+  <div id="capacity" class="page">
+    <div class="kpi-grid">
+      <div class="kpi kpi-2"><div class="kpi-icon">📚</div><div class="kpi-label">Total Activities</div><div class="kpi-value" id="cbKPI1">83</div><div class="kpi-sub">2020–2026</div></div>
+      <div class="kpi kpi-3"><div class="kpi-icon">🔥</div><div class="kpi-label">Most Active Year</div><div class="kpi-value" id="cbKPI2">2024</div><div class="kpi-sub" id="cbKPI2sub">23 activities</div></div>
+      <div class="kpi kpi-1"><div class="kpi-icon">👥</div><div class="kpi-label">Total Participants</div><div class="kpi-value" id="cbKPI3">1,493</div><div class="kpi-sub">2023–2026</div></div>
+      <div class="kpi kpi-4"><div class="kpi-icon">⭐</div><div class="kpi-label">Peak Participants</div><div class="kpi-value" id="cbKPI4">2025</div><div class="kpi-sub">658 participants</div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Activities per Year</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalCB')">✏️ Edit</button>
+        </div>
+        <div style="position:relative;height:210px"><canvas id="cbYearBar"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header"><div><div class="chart-title">Activities vs Participants</div></div></div>
+        <div class="legend">
+          <span><span class="legend-sq" style="background:#667eea"></span>Activities</span>
+          <span><span class="legend-sq" style="background:#f953c6"></span>Participants ÷10</span>
+        </div>
+        <div style="position:relative;height:182px"><canvas id="cbCombo"></canvas></div>
+      </div>
+    </div>
+    <div class="section-title">Activity Log</div>
+    <div class="table-toolbar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="cbYearFilter" onchange="filterCBTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All years</option>
+          <option>2020</option><option>2021</option><option>2022</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option>
+        </select>
+        <div class="search-box">🔍 <input type="text" id="cbSearch" placeholder="Search…" oninput="filterCBTable()"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-edit" onclick="openModal('modalCB')">✏️ Edit Data</button>
+        <button class="btn btn-teal" onclick="exportTableCSV('cbTable','Capacity_Building')">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('cbFnrPanel')">🔍 Find & Replace</button>
+      </div>
+    </div>
+    <div id="cbFnrPanel" class="fnr-panel">
+      <span style="font-size:12px;font-weight:600;color:#374151">Find:</span>
+      <input type="text" id="cbFnrFind" placeholder="Find text…">
+      <span style="font-size:12px;font-weight:600;color:#374151">Replace:</span>
+      <input type="text" id="cbFnrReplace" placeholder="Replace with…">
+      <button class="btn btn-edit btn-sm" onclick="doFnR('cb')">Replace All</button>
+      <button class="btn btn-outline btn-sm" onclick="togglePanel('cbFnrPanel')">Close</button>
+    </div>
+    <div class="table-wrap"><table id="cbTable">
+      <thead><tr><th>Year</th><th>Date</th><th>Activity</th><th>Venue</th><th style="text-align:center">Participants</th><th style="text-align:center">Report</th></tr></thead>
+      <tbody id="cbTableBody"></tbody>
+    </table></div>
+    <div style="margin-top:8px">
+      <button class="qa-toggle" onclick="toggleQuickAdd('cb')">＋ Quick Add Row</button>
+      <div id="cbQA" style="display:none">
+        <div class="quick-add-bar" style="margin-top:6px">
+          <span class="qa-label">Year:</span><input type="number" id="qaCBYear" placeholder="2026" style="width:70px">
+          <span class="qa-label">Date:</span><input type="text" id="qaCBDate" placeholder="Jan 1, 2026" style="width:110px">
+          <span class="qa-label">Activity:</span><input type="text" id="qaCBActivity" placeholder="Activity name" style="min-width:160px">
+          <span class="qa-label">Venue:</span><input type="text" id="qaCBVenue" placeholder="Venue">
+          <span class="qa-label">Pax:</span><input type="number" id="qaCBPax" placeholder="0" style="width:60px">
+          <button class="btn btn-green btn-sm" onclick="quickAddCB()">Add ✓</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleQuickAdd('cb')">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PRESENTATIONS ══════════════ -->
+  <div id="presentations" class="page">
+    <div class="kpi-grid">
+      <div class="kpi kpi-3"><div class="kpi-icon">📜</div><div class="kpi-label">Total Applications</div><div class="kpi-value" id="pKPI1">84</div><div class="kpi-sub">International track</div></div>
+      <div class="kpi kpi-1"><div class="kpi-icon">💸</div><div class="kpi-label">Total Subsidy</div><div class="kpi-value" id="pKPI2">₱1.40M</div><div class="kpi-sub">International track</div></div>
+      <div class="kpi kpi-2"><div class="kpi-icon">📈</div><div class="kpi-label">Peak Year</div><div class="kpi-value" id="pKPI3">2024</div><div class="kpi-sub" id="pKPI3sub">29 applications</div></div>
+      <div class="kpi kpi-5"><div class="kpi-icon">🏫</div><div class="kpi-label">Top Department</div><div class="kpi-value" id="pKPI4">CITCS</div><div class="kpi-sub">25 papers · ₱400K</div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Applications by Year</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalPres')">✏️ Edit</button>
+        </div>
+        <div style="position:relative;height:210px"><canvas id="presYearChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header"><div><div class="chart-title">Papers by Department</div></div></div>
+        <div style="position:relative;height:210px"><canvas id="presDeptPie"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-full">
+      <div class="chart-header">
+        <div><div class="chart-title">Subsidy by Department (₱)</div></div>
+        <button class="btn btn-edit btn-sm" onclick="openModal('modalPres')">✏️ Edit</button>
+      </div>
+      <div id="presDeptBars"></div>
+    </div>
+    <div class="section-title">Records</div>
+    <div class="table-toolbar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="presYearFilter" onchange="filterPresTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All years</option>
+          <option>2020</option><option>2021</option><option>2022</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option>
+        </select>
+        <select id="presDeptFilter" onchange="filterPresTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All Depts</option>
+          <option>CAS</option><option>CBA</option><option>CCJE</option><option>CEA</option><option>CHTM</option><option>CITCS</option><option>COA</option><option>COE</option><option>CONAHS</option><option>CTE</option><option>NTS</option><option>RSO</option>
+        </select>
+        <select id="presStatusFilter" onchange="filterPresTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All Status</option><option>Presentation</option><option>Publication</option>
+        </select>
+        <div class="search-box">🔍 <input type="text" id="presSearch" placeholder="Search…" oninput="filterPresTable()"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-edit" onclick="openModal('modalPres')">✏️ Edit Data</button>
+        <button class="btn btn-teal" onclick="exportTableCSV('presTable','Presentations')">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('presFnrPanel')">🔍 Find & Replace</button>
+      </div>
+    </div>
+    <div id="presFnrPanel" class="fnr-panel">
+      <span style="font-size:12px;font-weight:600;color:#374151">Find:</span>
+      <input type="text" id="presFnrFind" placeholder="Find text…">
+      <span style="font-size:12px;font-weight:600;color:#374151">Replace:</span>
+      <input type="text" id="presFnrReplace" placeholder="Replace with…">
+      <button class="btn btn-edit btn-sm" onclick="doFnR('pres')">Replace All</button>
+      <button class="btn btn-outline btn-sm" onclick="togglePanel('presFnrPanel')">Close</button>
+    </div>
+    <div class="table-wrap"><table id="presTable">
+      <thead><tr><th>Year</th><th>Researcher</th><th>Title</th><th>Dept</th><th style="text-align:right">Subsidy (₱)</th><th>Status</th></tr></thead>
+      <tbody id="presTableBody"></tbody>
+    </table></div>
+    <div style="margin-top:8px">
+      <button class="qa-toggle" onclick="toggleQuickAdd('pres')">＋ Quick Add Row</button>
+      <div id="presQA" style="display:none">
+        <div class="quick-add-bar" style="margin-top:6px">
+          <span class="qa-label">Year:</span><input type="number" id="qaPresYear" placeholder="2026" style="width:70px">
+          <span class="qa-label">Name:</span><input type="text" id="qaPresName" placeholder="Researcher name">
+          <span class="qa-label">Title:</span><input type="text" id="qaPresTitle" placeholder="Paper title" style="min-width:160px">
+          <span class="qa-label">Dept:</span><input type="text" id="qaPresDept" placeholder="DEPT" style="width:65px">
+          <span class="qa-label">₱:</span><input type="number" id="qaPresSubsidy" placeholder="15000" style="width:80px">
+          <select id="qaPresStatus" style="font-size:12px;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:7px;background:#fff;font-family:inherit"><option>Presentation</option><option>Publication</option></select>
+          <button class="btn btn-green btn-sm" onclick="quickAddPres()">Add ✓</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleQuickAdd('pres')">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ══════════════ DOST-GIA TRACKER ══════════════ -->
+  <div id="tracker" class="page">
+    <div class="kpi-grid">
+      <div class="kpi kpi-1"><div class="kpi-icon">🎯</div><div class="kpi-label">Avg Success Rate</div><div class="kpi-value" id="trKPI1">–</div><div class="kpi-sub" id="trKPI1sub">2020–2024 funded</div></div>
+      <div class="kpi kpi-2"><div class="kpi-icon">📤</div><div class="kpi-label">Total Submitted</div><div class="kpi-value" id="trKPI2">–</div><div class="kpi-sub">All years combined</div></div>
+      <div class="kpi kpi-3"><div class="kpi-icon">✅</div><div class="kpi-label">Total Funded</div><div class="kpi-value" id="trKPI3">–</div><div class="kpi-sub">Approved proposals</div></div>
+      <div class="kpi kpi-4"><div class="kpi-icon">🏆</div><div class="kpi-label">Best Year</div><div class="kpi-value" id="trKPI4">–</div><div class="kpi-sub" id="trKPI4sub">highest success rate</div></div>
+      <div class="kpi kpi-5"><div class="kpi-icon">🏫</div><div class="kpi-label">Most Active College</div><div class="kpi-value" id="trKPI5">–</div><div class="kpi-sub" id="trKPI5sub">by submissions</div></div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">DOST-GIA Success Rate by Year</div><div class="chart-subtitle">% of submissions that received funding</div></div>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="trRateChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Submitted vs Funded (UC-wide)</div><div class="chart-subtitle">Annual DOST-GIA proposal pipeline</div></div>
+        </div>
+        <div class="legend">
+          <span><span class="legend-sq" style="background:#667eea"></span>Submitted</span>
+          <span><span class="legend-sq" style="background:#38ef7d"></span>Funded</span>
+        </div>
+        <div style="position:relative;height:195px"><canvas id="trVolChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-full" style="margin-bottom:16px">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Submissions by College (All Years)</div>
+          <div class="chart-subtitle">Total proposals submitted per college</div>
+        </div>
+      </div>
+      <div id="trCollegeBars" style="padding-top:4px"></div>
+    </div>
+
+    <!-- Tracker Table -->
+    <div class="section-title" style="margin-top:4px">📋 College-Level Tracker (Attended / Submitted / Funded)</div>
+    <div class="table-toolbar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="trMetricFilter" onchange="renderTrackerTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">Show A/S/F</option>
+          <option value="submitted">Submitted only</option>
+          <option value="funded">Funded only</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-edit" onclick="openModal('modalTrackerEdit')">✏️ Edit Data</button>
+        <button class="btn btn-outline" onclick="openModal('modalCSVImport')">📂 Import CSV</button>
+        <button class="btn btn-teal" onclick="exportTableCSV('trackerDisplayTable','DOST_GIA_Tracker')">⬇ CSV</button>
+        <button class="btn btn-primary" onclick="openModal('modalBackup')">💾 Backup / Restore</button>
+      </div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:8px">
+      <table id="trackerDisplayTable">
+        <thead id="trackerDisplayHead"></thead>
+        <tbody id="trackerDisplayBody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      <span><strong style="color:#374151">A</strong> = Attended the conference</span>
+      <span><strong style="color:#667eea">S</strong> = Submitted a proposal</span>
+      <span><strong style="color:#11998e">F</strong> = Proposal funded</span>
+      <span style="color:#d1d5db">– = No participation recorded</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ RSO SERVICES ══════════════ -->
+  <div id="rsoservices" class="page">
+    <div class="kpi-grid">
+      <div class="kpi kpi-1"><div class="kpi-icon">🛎️</div><div class="kpi-label">Total Services</div><div class="kpi-value" id="rsoKPI1">0</div><div class="kpi-sub">All records</div></div>
+      <div class="kpi kpi-2"><div class="kpi-icon">📋</div><div class="kpi-label">Unique Services</div><div class="kpi-value" id="rsoKPI2">0</div><div class="kpi-sub">Distinct types</div></div>
+      <div class="kpi kpi-3"><div class="kpi-icon">🏫</div><div class="kpi-label">Colleges Served</div><div class="kpi-value" id="rsoKPI3">0</div><div class="kpi-sub">Unique colleges</div></div>
+      <div class="kpi kpi-5"><div class="kpi-icon">📅</div><div class="kpi-label">Latest Year</div><div class="kpi-value" id="rsoKPI4">–</div><div class="kpi-sub">Most recent record</div></div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Services by Year</div><div class="chart-subtitle">Number of services availed annually</div></div>
+          <button class="btn btn-edit btn-sm" onclick="openModal('modalRSO')">✏️ Edit</button>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="rsoYearChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <div><div class="chart-title">Services by College</div><div class="chart-subtitle">Distribution across colleges</div></div>
+        </div>
+        <div style="position:relative;height:220px"><canvas id="rsoCollegePie"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-full">
+      <div class="chart-header">
+        <div><div class="chart-title">Service Type Breakdown</div><div class="chart-subtitle">Most availed RSO services</div></div>
+        <button class="btn btn-edit btn-sm" onclick="openModal('modalRSO')">✏️ Edit</button>
+      </div>
+      <div id="rsoServiceBars"></div>
+    </div>
+
+    <div class="section-title">RSO Services Log</div>
+    <div class="table-toolbar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="rsoYearFilter" onchange="filterRSOTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All years</option>
+        </select>
+        <select id="rsoCollegeFilter" onchange="filterRSOTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All Colleges</option>
+        </select>
+        <select id="rsoServiceFilter" onchange="filterRSOTable()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="all">All Services</option>
+        </select>
+        <div class="search-box">🔍 <input type="text" id="rsoSearch" placeholder="Search…" oninput="filterRSOTable()"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-edit" onclick="openModal('modalRSO')">✏️ Edit Data</button>
+        <button class="btn btn-teal" onclick="exportTableCSV('rsoTable','RSO_Services')">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePanel('rsoFnrPanel')">🔍 Find & Replace</button>
+      </div>
+    </div>
+    <div id="rsoFnrPanel" class="fnr-panel">
+      <span style="font-size:12px;font-weight:600;color:#374151">Find:</span>
+      <input type="text" id="rsoFnrFind" placeholder="Find text…">
+      <span style="font-size:12px;font-weight:600;color:#374151">Replace:</span>
+      <input type="text" id="rsoFnrReplace" placeholder="Replace with…">
+      <button class="btn btn-edit btn-sm" onclick="doFnR('rso')">Replace All</button>
+      <button class="btn btn-outline btn-sm" onclick="togglePanel('rsoFnrPanel')">Close</button>
+    </div>
+    <div class="table-wrap"><table id="rsoTable">
+      <thead><tr><th>#</th><th>Year</th><th>Date</th><th>Service Availed</th><th>Title of Study</th><th>College</th></tr></thead>
+      <tbody id="rsoTableBody"></tbody>
+    </table></div>
+    <div style="margin-top:8px">
+      <button class="qa-toggle" onclick="toggleQuickAdd('rso')">＋ Quick Add Row</button>
+      <div id="rsoQA" style="display:none">
+        <div class="quick-add-bar" style="margin-top:6px">
+          <span class="qa-label">Year:</span><input type="number" id="qaRSOYear" placeholder="2026" style="width:70px">
+          <span class="qa-label">Date:</span><input type="text" id="qaRSODate" placeholder="Jan 1, 2026" style="width:110px">
+          <span class="qa-label">Service:</span><input type="text" id="qaRSOService" placeholder="Service name">
+          <span class="qa-label">Title:</span><input type="text" id="qaRSOTitle" placeholder="Study title" style="min-width:140px">
+          <span class="qa-label">College:</span><input type="text" id="qaRSOCollege" placeholder="DEPT" style="width:70px">
+          <button class="btn btn-green btn-sm" onclick="quickAddRSO()">Add ✓</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleQuickAdd('rso')">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════ SCRIPT ═══════════ -->
+<script>
+/* ── DATA ────────────────────────────────────────────────── */
+let localGrants = [
+  {seq:1,title:'HEIRIT-TBI',agency:'DOST PCIERRD',year:2019,amount:8700000},
+  {seq:2,title:'IMPACT',agency:'DOST PCIERRD',year:2020,amount:2400000},
+  {seq:3,title:'IMAHE Labs',agency:'DOST PCIERRD',year:2021,amount:6300000},
+  {seq:4,title:'BOONDOCK',agency:'DOST PCIERRD',year:2021,amount:26400000},
+  {seq:5,title:'SUNSHARE',agency:'DOST PCIERRD',year:2021,amount:3900000},
+  {seq:6,title:'TARAKI 1.0',agency:'DOST PCIERRD',year:2022,amount:1500000},
+  {seq:7,title:'TARAKI 2.0',agency:'DOST PCIERRD',year:2023,amount:8000000},
+  {seq:8,title:'DANUM (SHS-YIP)',agency:'DOST PCIERRD',year:2023,amount:405000},
+  {seq:9,title:'CRIMEX',agency:'DOST PCIERRD',year:2024,amount:10200000},
+  {seq:10,title:'Gamification of TSG with AI',agency:'DOST PCIERRD',year:2024,amount:15000000},
+  {seq:11,title:'DANUM',agency:'NRCP',year:2021,amount:7800000},
+  {seq:12,title:'CALAMI-T',agency:'DOST-GIA',year:2022,amount:20700000},
+  {seq:13,title:'Data Strategies with GIS & Analytics',agency:'DODT-GODDESS',year:2024,amount:1000000},
+  {seq:14,title:'CSIS Baguio City',agency:'DILG-CSIC',year:2023,amount:300000},
+  {seq:15,title:'Smart Garbage Bin Monitoring',agency:'LGU-Baguio City',year:2025,amount:300000},
+  {seq:16,title:'Educational Technologies in Criminalistics',agency:'CHED RECPE',year:2021,amount:5000000},
+  {seq:17,title:'Intelligent Transport System in Baguio-Benguet',agency:'CHED COE',year:2022,amount:3000000},
+  {seq:18,title:'Cultural Icons of the Ifugao',agency:'CHED COE',year:2022,amount:3000000},
+  {seq:19,title:'UC-CCJE Research Capability Enhancement',agency:'CHED COE',year:2022,amount:3000000},
+];
+
+let cbData = [
+  {year:2026,date:'Apr 28, 2026',activity:'2nd DIGIHAZ Networking Event',venue:'Travelite Hotel, Baguio City',participants:40,report:true},
+  {year:2026,date:'Apr 18, 2026',activity:'Bridging the GAP (DRR)',venue:'UC Innovation and Technology Office',participants:50,report:true},
+  {year:2026,date:'Apr 17, 2026',activity:'CRHRDC Proposal Workshop',venue:'UC Main PLR 4, Media Center',participants:30,report:true},
+  {year:2026,date:'Mar 31, 2026',activity:'Session 2: Revisiting University Research Agenda (NTS)',venue:'UC Main PLR 4',participants:30,report:true},
+  {year:2026,date:'Mar 28, 2026',activity:'Risk Communication and Data Analytics Seminar',venue:'UC Innovation and Technology Office',participants:30,report:true},
+  {year:2026,date:'Mar 6, 2026',activity:'Session 1: Revisiting University Research Agenda (Academe)',venue:'UC Main PLR 4',participants:30,report:true},
+  {year:2026,date:'Feb 21, 2026',activity:'Programming Fundamentals & Stakeholder Consultation in Geomatics',venue:'UC Main PLR 4',participants:26,report:true},
+  {year:2026,date:'Feb 13, 2026',activity:'Session 3: DOST Capsule Proposal Writeshop',venue:'UC Innovation and Technology Office',participants:50,report:true},
+  {year:2026,date:'Feb 11, 2026',activity:'Session 2: DOST QRC and Problem Conceptualization Workshop',venue:'UC Innovation and Technology Office',participants:50,report:true},
+  {year:2026,date:'Feb 10, 2026',activity:'Session 4: Capsule Proposal Submission Workshop',venue:'UC Main PLR 4',participants:40,report:true},
+  {year:2026,date:'Feb 6, 2026',activity:'Project G4RS Dashboard Workshop',venue:'SC3 War Room, Baguio City',participants:25,report:true},
+  {year:2026,date:'Feb 3, 2026',activity:'Session 1: DOST Call for Proposal Re-Echoing Session',venue:'UC Innovation and Technology Office',participants:60,report:true},
+  {year:2026,date:'Jan 21, 2026',activity:'Writing and Publishing Workshop',venue:'UC Main PLR 4',participants:50,report:true},
+  {year:2026,date:'Jan 12-15, 2026',activity:'DIGIHAZ: Digital Transformation for Natural Hazards Workshop',venue:'Universiti Sains Malaysia, Penang',participants:70,report:true},
+  {year:2025,date:'Nov 14, 2025',activity:'1st DIGIHAZ Networking Event',venue:'Travelite Hotel, Baguio City',participants:40,report:true},
+  {year:2025,date:'Oct 28-30, 2025',activity:'15th Regional Symposium and 8th Regional Student Research Congress',venue:'Ifugao State University',participants:5,report:true},
+  {year:2025,date:'Oct 23, 2025',activity:'Policy-Making Seminar and Workshop',venue:'UC Auditorium',participants:200,report:true},
+  {year:2025,date:'Oct 6, 2025',activity:'DOE DOST Call for Proposal Writeshop',venue:'UC Libraries',participants:14,report:true},
+  {year:2025,date:'Sep 30, 2025',activity:'8th Agency In-House Review',venue:'UC Legarda',participants:100,report:true},
+  {year:2025,date:'Jun 7, 2025',activity:'Seminar on Remote Sensing and Data Analytics',venue:'UC Conference Room',participants:30,report:true},
+  {year:2025,date:'Apr 25, 2025',activity:'Full-Blown Proposal Writeshop 2025',venue:'TBI, UC Legarda',participants:28,report:false},
+  {year:2025,date:'Mar 12, 2025',activity:'Capsule Proposal Submission Workshop',venue:'U401',participants:14,report:true},
+  {year:2025,date:'Feb 7, 2025',activity:'Capsule Proposal Writeshop',venue:'U401',participants:12,report:true},
+  {year:2025,date:'Jan 27, 2025',activity:'Creation and Project Concept Proposal',venue:'U401',participants:37,report:true},
+  {year:2025,date:'Jan 21, 2025',activity:'University Orientation on QRC and Problem Conceptualization',venue:'Canao Hall',participants:38,report:true},
+  {year:2024,date:'Nov 22, 2024',activity:'CHTM Workshop on Research Publication',venue:'U401',participants:18,report:true},
+  {year:2024,date:'Nov 13-15, 2024',activity:'Geomatics for DRR & Climate Change Adaptation Masterclass',venue:'M301',participants:8,report:true},
+  {year:2024,date:'Oct 16, 2024',activity:'DILG-LGA Meeting',venue:'Tribu, CHTM Bldg.',participants:18,report:true},
+  {year:2024,date:'Sep 28, 2024',activity:"UC's 7th Agency In-House Review",venue:'TBI, Legarda – Blended',participants:10,report:true},
+  {year:2024,date:'Jul 5, 2024',activity:'Basic Research Ethics',venue:'U401',participants:16,report:true},
+  {year:2024,date:'Feb 6, 2024',activity:'Session 2: Problem Conceptualization and QRC Formation',venue:'Auditorium',participants:62,report:true},
+  {year:2023,date:'Dec 13, 2023',activity:'Module 1&2: Literature Review and Research Problem Conceptualization',venue:'Zoom',participants:26,report:true},
+  {year:2023,date:'Nov 9, 2023',activity:'Thesis Writing Using IMRAD for Publication',venue:'Room U401',participants:20,report:true},
+  {year:2023,date:'Oct 14, 2023',activity:'6th Agency In-House Review',venue:'Conference Room',participants:3,report:true},
+  {year:2023,date:'Jul 19-20, 2023',activity:'CSIS Field Investigator Training',venue:'TBI, Legarda Campus',participants:13,report:true},
+  {year:2023,date:'Jan 12-13, 2023',activity:'Research Proposal & Scientific Writing Training',venue:'Blended / Canao Hall',participants:21,report:true},
+  {year:2022,date:'Various 2022',activity:'Research workshops and seminars (7 sessions)',venue:'UC Campus',participants:null,report:true},
+  {year:2021,date:'Various 2021',activity:'Research capability enhancement series (11 sessions)',venue:'Online / UC Campus',participants:null,report:true},
+  {year:2020,date:'Various 2020',activity:'Research orientation and COVID-19 response forums (3 sessions)',venue:'Online',participants:null,report:true},
+];
+
+let presData = [
+  {year:2026,name:'Janice Calugan',title:'The Utilization of AI in Shaping College Instruction',dept:'CTE',subsidy:20000,status:'Presentation'},
+  {year:2026,name:'Beverly Chapichap',title:'An Integrated SA/TAM Framework for Academic Libraries',dept:'NTS',subsidy:15000,status:'Presentation'},
+  {year:2026,name:'Reuben Victor Laguitan',title:'Dengue Information on Youtube Insights for Nonendemic Regions',dept:'CONAHS',subsidy:15000,status:'Presentation'},
+  {year:2026,name:'Zyra Yell Fagyan',title:'Establishing a Localized Facial Emotion Dataset for Enhanced Affective Computing',dept:'CITCS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Joan Peralta',title:'Assessing the Accuracy of Random Forest in Mapping Urban Green Cover in Baguio City',dept:'CITCS',subsidy:20000,status:'Presentation'},
+  {year:2025,name:'Reuben Victor Laguitan',title:'Can AI Bridge or Widen Maternal Health Inequities?',dept:'CONAHS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Jevilyn P. Madalang',title:'Disengagement from the Legal System: Case Attrition Among Rape Victims',dept:'CCJE',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Reuben Victor Laguitan',title:'Can AI Bridge or Widen Maternal Health Inequities? (2)',dept:'CONAHS',subsidy:20000,status:'Presentation'},
+  {year:2025,name:'Laarni Lourdes B. Andam',title:'8th International Conference on Food & Nutrition',dept:'CHTM',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Leah M. Donato',title:"Navigating Parental Involvement: Social Workers' Experiences in Rehabilitation of CICL",dept:'CCJE',subsidy:20000,status:'Publication'},
+  {year:2025,name:'Luis William Meing',title:'Exploring Multilevel Feedback Queue Combinations in Scheduling Algorithms',dept:'CITCS',subsidy:20000,status:'Presentation'},
+  {year:2025,name:'Nikko Jayson P. Go',title:'Effectiveness of Organizational Communication of the Department of Agriculture CAR',dept:'CBA',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Jefferson M. Delmendo',title:'The Philippine Judiciary as a Political Institution',dept:'CAS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Melinda A. Beninsig',title:'BUMIDANG: Android App for Broadcasting Fire Alerts in Baguio City',dept:'CITCS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Jasmine K. Evasco',title:'Relationship between Forgiveness and Resilience Among Young Adults',dept:'CAS',subsidy:20000,status:'Presentation'},
+  {year:2025,name:'Margaret J. Concha',title:'Moderating Role of Collectivism on Self-Compassion and Compassion for Others',dept:'CAS',subsidy:20000,status:'Presentation'},
+  {year:2025,name:'Arnemie Gayyed',title:'Distinguishing AI Generated and Human Generated Phishing Emails',dept:'CITCS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Don Harl C. Malabanan',title:'POT-AVL: A Novel CPU Scheduling Algorithm based on AVL Trees',dept:'CITCS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Ibrahim Hanbal',title:'Deriving the Current Sentiments of WFH Employees in the Philippines',dept:'CITCS',subsidy:15000,status:'Presentation'},
+  {year:2025,name:'Leah Donato',title:'Navigating Parental Involvement (resubmission)',dept:'NTS',subsidy:15000,status:'Publication'},
+  {year:2024,name:'Gilbert D. Bernardino Jr.',title:'Nursing Shortage in the Philippines',dept:'CONAHS',subsidy:15000,status:'Presentation'},
+  {year:2024,name:'Estong Meing',title:'Sustainable Rainwater Harvesting System',dept:'CEA',subsidy:15000,status:'Presentation'},
+  {year:2024,name:'Joevan F. Rona',title:'A Morphological Analysis of BPO Services and Urban Landscape in Baguio City',dept:'CEA',subsidy:20000,status:'Publication'},
+  {year:2024,name:'Gerard Carlo V. Espiritu',title:'Urban Ecopuncture: Wetland Parks Criteria for Flood Mitigation',dept:'CEA',subsidy:20000,status:'Publication'},
+  {year:2024,name:'Aiza A. Fernandez',title:'Modernized Tuba: a 15-minutes city approach towards sustainability',dept:'CEA',subsidy:20000,status:'Publication'},
+  {year:2023,name:'Various researchers',title:'2023 publications and presentations',dept:'CITCS',subsidy:60000,status:'Presentation'},
+  {year:2022,name:'Various researchers',title:'2022 research subsidies',dept:'CEA',subsidy:45000,status:'Presentation'},
+  {year:2021,name:'Various researchers',title:'2021 international presentations',dept:'CITCS',subsidy:235332,status:'Presentation'},
+  {year:2020,name:'Various researchers',title:'2020 international presentations',dept:'CEA',subsidy:155000,status:'Presentation'},
+];
+
+/* ── DOST-GIA TRACKER DATA ───────────────────────────────── */
+// Each row: { college, years: { 2020:[A,S,F], 2021:[A,S,F], ... } }
+// A=Attended, S=Submitted, F=Funded. Use null if no data for that field.
+let trackerData = {
+  years: [2020,2021,2022,2023,2024,2025],
+  rows: [
+    {college:'CAS',    cells:{2020:[0,0,0], 2021:[0,1,0], 2022:[0,2,0], 2023:[0,0,0], 2024:[0,0,0], 2025:[0,0,0]}},
+    {college:'CBA',    cells:{2020:[5,5,0], 2021:[0,0,0], 2022:[1,1,0], 2023:[0,0,0], 2024:[3,3,0], 2025:[4,4,0]}},
+    {college:'CCJE',   cells:{2020:[2,2,0], 2021:[0,0,0], 2022:[3,3,0], 2023:[2,2,2], 2024:[3,3,0], 2025:[8,8,0]}},
+    {college:'CEA',    cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[1,1,0], 2023:[0,0,0], 2024:[2,2,0], 2025:[2,2,0]}},
+    {college:'CHTM',   cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[0,0,0], 2023:[2,2,0], 2024:[0,0,0], 2025:[5,5,0]}},
+    {college:'CITCS',  cells:{2020:[10,10,0],2021:[1,1,1], 2022:[3,3,0], 2023:[3,3,1], 2024:[8,9,3], 2025:[10,10,0]}},
+    {college:'CON',    cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[3,3,0], 2023:[2,2,0], 2024:[3,3,0], 2025:[0,0,0]}},
+    {college:'CTE',    cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[0,0,0], 2023:[0,0,0], 2024:[0,0,0], 2025:[10,10,4]}},
+    {college:'InTTO',  cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[3,3,3], 2023:[2,2,0], 2024:[0,0,0], 2025:[0,0,0]}},
+    {college:'MCES',   cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[0,0,0], 2023:[1,1,0], 2024:[1,1,0], 2025:[0,0,0]}},
+    {college:'OSAS',   cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[0,0,0], 2023:[0,0,0], 2024:[1,1,0], 2025:[0,0,0]}},
+    {college:'RSO',    cells:{2020:[3,3,3], 2021:[3,3,3], 2022:[4,1,1], 2023:[4,4,0], 2024:[4,4,0], 2025:[0,0,0]}},
+    {college:'SHS',    cells:{2020:[0,0,0], 2021:[0,0,0], 2022:[2,2,2], 2023:[5,5,1], 2024:[0,4,0], 2025:[0,0,0]}},
+  ]
+};
+
+/* overview KPI card definitions */
+let overviewKPIs = [
+  {icon:'💰',label:'Total Grant Funding',value:'₱126.9M',sub:'19 funded projects',cls:'kpi-1'},
+  {icon:'🎓',label:'CB Activities',value:'83',sub:'2020 – 2026',cls:'kpi-2'},
+  {icon:'📄',label:'Presentations & Pubs',value:'84',sub:'International track',cls:'kpi-3'},
+  {icon:'🏆',label:'Research Subsidy',value:'₱1.40M',sub:'International track',cls:'kpi-4'},
+  {icon:'👥',label:'Participants Tracked',value:'1,493',sub:'2023–2026',cls:'kpi-5'},
+  {icon:'🏅',label:'Most Active Year',value:'2024',sub:'23 CB · 29 presentations',cls:'kpi-6'},
+];
+
+/* ── COLORS ──────────────────────────────────────────────── */
+const MULTI=['#f7971e','#667eea','#11998e','#f953c6','#fc4a1a','#38ef7d','#ffd200','#764ba2','#0f3460','#b91d73','#f7b733','#1a9ed4'];
+const GC='rgba(0,0,0,.055)', TC='#6b7280';
+const BO={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}}}}};
+
+/* ── CHART INSTANCES ─────────────────────────────────────── */
+let charts={};
+function makeChart(id,cfg){
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(document.getElementById(id),cfg);
+}
+
+/* ── BUILD ALL CHARTS FROM DATA ──────────────────────────── */
+function buildCharts(){
+  /* aggregate grants by year */
+  const yearTotals={};
+  localGrants.forEach(g=>{yearTotals[g.year]=(yearTotals[g.year]||0)+g.amount/1e6});
+  const gyrs=Object.keys(yearTotals).sort();
+  const gyvals=gyrs.map(y=>+yearTotals[y].toFixed(2));
+
+  makeChart('fundingByYear',{type:'bar',data:{labels:gyrs,datasets:[{data:gyvals,backgroundColor:MULTI.slice(0,gyrs.length),borderRadius:6,borderSkipped:false}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>'₱'+v+'M'}}}}});
+
+  /* CB by year */
+  const cbByYear={};
+  cbData.forEach(r=>{cbByYear[r.year]=(cbByYear[r.year]||0)+1});
+  /* pres by year */
+  const pByYear={};
+  presData.forEach(r=>{pByYear[r.year]=(pByYear[r.year]||0)+1});
+  const allYrs=[...new Set([...Object.keys(cbByYear),...Object.keys(pByYear)])].sort();
+  makeChart('trendCombo',{type:'bar',data:{labels:allYrs,datasets:[
+    {type:'bar',label:'CB Activities',data:allYrs.map(y=>cbByYear[y]||0),backgroundColor:'rgba(102,126,234,.75)',borderRadius:4},
+    {type:'line',label:'Presentations',data:allYrs.map(y=>pByYear[y]||0),borderColor:'#f7971e',backgroundColor:'rgba(247,151,30,.08)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#f7971e',pointBorderColor:'#fff',pointBorderWidth:2}
+  ]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+
+  /* agency pie */
+  const agTotals={};
+  localGrants.forEach(g=>{agTotals[g.agency]=(agTotals[g.agency]||0)+g.amount/1e6});
+  const agLbls=Object.keys(agTotals), agVals=agLbls.map(a=>+agTotals[a].toFixed(2));
+  makeChart('overviewPie',{type:'doughnut',data:{labels:agLbls,datasets:[{data:agVals,backgroundColor:MULTI,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'52%',plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},color:TC,padding:8,usePointStyle:true}}}}});
+  makeChart('grantsPie',{type:'pie',data:{labels:agLbls,datasets:[{data:agVals,backgroundColor:MULTI,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},color:TC,padding:8,usePointStyle:true}}}}});
+  makeChart('grantsYearChart',{type:'bar',data:{labels:gyrs,datasets:[{data:gyvals,backgroundColor:MULTI.slice(0,gyrs.length),borderRadius:6,borderSkipped:false}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>'₱'+v+'M'}}}}}); 
+
+  /* CB year bar + combo */
+  const cbYrs=Object.keys(cbByYear).sort();
+  makeChart('cbYearBar',{type:'bar',data:{labels:cbYrs,datasets:[{data:cbYrs.map(y=>cbByYear[y]),backgroundColor:MULTI.slice(0,cbYrs.length),borderRadius:6,borderSkipped:false}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+  /* participants by year */
+  const partByYear={};
+  cbData.forEach(r=>{if(r.participants) partByYear[r.year]=(partByYear[r.year]||0)+r.participants});
+  makeChart('cbCombo',{type:'bar',data:{labels:cbYrs,datasets:[
+    {type:'bar',label:'Activities',data:cbYrs.map(y=>cbByYear[y]),backgroundColor:MULTI.slice(0,cbYrs.length),borderRadius:4},
+    {type:'line',label:'Participants ÷10',data:cbYrs.map(y=>((partByYear[y]||0)/10)),borderColor:'#f953c6',backgroundColor:'transparent',tension:.35,pointRadius:5,pointBackgroundColor:'#f953c6',pointBorderColor:'#fff',pointBorderWidth:2,borderDash:[4,3]}
+  ]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+
+  /* presentations year bar */
+  const pYrs=Object.keys(pByYear).sort();
+  makeChart('presYearChart',{type:'bar',data:{labels:pYrs,datasets:[{data:pYrs.map(y=>pByYear[y]),backgroundColor:MULTI.slice(0,pYrs.length),borderRadius:6,borderSkipped:false}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+  /* dept pie */
+  const deptCount={};
+  presData.forEach(r=>{deptCount[r.dept]=(deptCount[r.dept]||0)+1});
+  const dpLbls=Object.keys(deptCount).sort((a,b)=>deptCount[b]-deptCount[a]);
+  makeChart('presDeptPie',{type:'doughnut',data:{labels:dpLbls,datasets:[{data:dpLbls.map(d=>deptCount[d]),backgroundColor:MULTI,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},color:TC,padding:8,usePointStyle:true}}}}});
+
+  /* horizontal bars */
+  buildHBars();
+
+  /* KPI sync */
+  syncKPIs();
+}
+
+/* ── HORIZONTAL BARS ─────────────────────────────────────── */
+function buildHBars(){
+  /* dept subsidy */
+  const dSub={};
+  presData.forEach(r=>{dSub[r.dept]=(dSub[r.dept]||0)+r.subsidy});
+  const dSorted=Object.keys(dSub).sort((a,b)=>dSub[b]-dSub[a]);
+  ['overviewDeptBars','presDeptBars'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML='';
+    const max=dSub[dSorted[0]];
+    dSorted.forEach((d,i)=>{
+      el.innerHTML+=`<div class="bar-row"><div class="bar-label">${d}</div><div class="bar-track"><div class="bar-fill" style="width:${(dSub[d]/max*100).toFixed(1)}%;background:linear-gradient(90deg,${MULTI[i%MULTI.length]},${MULTI[i%MULTI.length]}bb)"></div></div><div class="bar-val">₱${(dSub[d]/1000).toFixed(0)}K</div></div>`;
+    });
+  });
+  /* agency bars */
+  const agTotals={};
+  localGrants.forEach(g=>{agTotals[g.agency]=(agTotals[g.agency]||0)+g.amount});
+  const agSorted=Object.keys(agTotals).sort((a,b)=>agTotals[b]-agTotals[a]);
+  const agEl=document.getElementById('agencyBars'); if(agEl){
+    agEl.innerHTML='';
+    const max=agTotals[agSorted[0]];
+    agSorted.forEach((a,i)=>{
+      const v=agTotals[a];
+      agEl.innerHTML+=`<div class="bar-row"><div class="bar-label" style="font-size:11px">${a}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/max*100).toFixed(1)}%;background:linear-gradient(90deg,${MULTI[i%MULTI.length]},${MULTI[i%MULTI.length]}bb)"></div></div><div class="bar-val">${v>=1e6?'₱'+(v/1e6).toFixed(1)+'M':'₱'+(v/1000).toFixed(0)+'K'}</div></div>`;
+    });
+  }
+}
+
+/* ── KPI SYNC ────────────────────────────────────────────── */
+function syncKPIs(){
+  /* overview cards */
+  const grid=document.getElementById('overviewKPIs'); if(!grid) return;
+  grid.innerHTML='';
+  overviewKPIs.forEach((k,i)=>{
+    grid.innerHTML+=`<div class="kpi ${k.cls}" onclick="editKPI(${i})" title="Click to edit"><div class="kpi-icon">${k.icon}</div><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div><div class="kpi-edit-hint">✏️ click to edit</div></div>`;
+  });
+  /* grants tab KPIs */
+  const total=localGrants.reduce((s,g)=>s+g.amount,0);
+  const maxG=localGrants.reduce((m,g)=>g.amount>m.amount?g:m,localGrants[0]);
+  const yearTotals2={};
+  localGrants.forEach(g=>{yearTotals2[g.year]=(yearTotals2[g.year]||0)+g.amount});
+  const peakYear=Object.keys(yearTotals2).sort((a,b)=>yearTotals2[b]-yearTotals2[a])[0];
+  const agTotals2={};
+  localGrants.forEach(g=>{agTotals2[g.agency]=(agTotals2[g.agency]||0)+g.amount});
+  const topAg=Object.keys(agTotals2).sort((a,b)=>agTotals2[b]-agTotals2[a])[0];
+  if(document.getElementById('gKPI1')) document.getElementById('gKPI1').textContent='₱'+(total/1e6).toFixed(1)+'M';
+  if(document.getElementById('gKPI2')) document.getElementById('gKPI2').textContent='₱'+(maxG.amount/1e6).toFixed(1)+'M';
+  if(document.getElementById('gKPI3')) document.getElementById('gKPI3').textContent=topAg;
+  if(document.getElementById('gKPI4')) document.getElementById('gKPI4').textContent=peakYear;
+  if(document.getElementById('gKPI4sub')) document.getElementById('gKPI4sub').textContent='₱'+(yearTotals2[peakYear]/1e6).toFixed(1)+'M received';
+  /* CB KPIs */
+  const cbTotal=cbData.length;
+  const cbByYr2={};
+  cbData.forEach(r=>{cbByYr2[r.year]=(cbByYr2[r.year]||0)+1});
+  const cbPeakYr=Object.keys(cbByYr2).sort((a,b)=>cbByYr2[b]-cbByYr2[a])[0];
+  const cbTotalPart=cbData.reduce((s,r)=>s+(r.participants||0),0);
+  if(document.getElementById('cbKPI1')) document.getElementById('cbKPI1').textContent=cbTotal;
+  if(document.getElementById('cbKPI2')) document.getElementById('cbKPI2').textContent=cbPeakYr;
+  if(document.getElementById('cbKPI2sub')) document.getElementById('cbKPI2sub').textContent=cbByYr2[cbPeakYr]+' activities';
+  if(document.getElementById('cbKPI3')) document.getElementById('cbKPI3').textContent=cbTotalPart.toLocaleString();
+  /* pres KPIs */
+  const pTotal=presData.length;
+  const pSub=presData.reduce((s,r)=>s+r.subsidy,0);
+  const pByYr2={};
+  presData.forEach(r=>{pByYr2[r.year]=(pByYr2[r.year]||0)+1});
+  const pPeakYr=Object.keys(pByYr2).sort((a,b)=>pByYr2[b]-pByYr2[a])[0];
+  if(document.getElementById('pKPI1')) document.getElementById('pKPI1').textContent=pTotal;
+  if(document.getElementById('pKPI2')) document.getElementById('pKPI2').textContent='₱'+(pSub/1e6).toFixed(2)+'M';
+  if(document.getElementById('pKPI3')) document.getElementById('pKPI3').textContent=pPeakYr;
+  if(document.getElementById('pKPI3sub')) document.getElementById('pKPI3sub').textContent=pByYr2[pPeakYr]+' applications';
+}
+
+/* ── OVERVIEW KPI EDITING ────────────────────────────────── */
+let editingKPIIndex=null;
+function editKPI(i){
+  editingKPIIndex=i;
+  const k=overviewKPIs[i];
+  document.getElementById('kpiLabel').value=k.label;
+  document.getElementById('kpiValue').value=k.value;
+  document.getElementById('kpiSub').value=k.sub;
+  document.getElementById('kpiIcon').value=k.icon;
+  openModal('modalKPI');
+}
+function saveKPI(){
+  if(editingKPIIndex===null) return;
+  overviewKPIs[editingKPIIndex]={
+    ...overviewKPIs[editingKPIIndex],
+    label:document.getElementById('kpiLabel').value,
+    value:document.getElementById('kpiValue').value,
+    sub:document.getElementById('kpiSub').value,
+    icon:document.getElementById('kpiIcon').value,
+  };
+  syncKPIs();
+  closeModal('modalKPI');
+  showToast('✅ KPI card updated!');
+}
+
+/* ── GRANTS EDIT MODAL ───────────────────────────────────── */
+function openGrantsEdit(){
+  const tb=document.getElementById('editGrantsBody'); tb.innerHTML='';
+  localGrants.forEach((g,i)=>{
+    tb.innerHTML+=`<tr>
+      <td><input value="${g.seq}" style="width:40px" id="gs${i}"></td>
+      <td><input value="${esc(g.title)}" id="gt${i}"></td>
+      <td><input value="${esc(g.agency)}" id="ga${i}"></td>
+      <td><input value="${g.year}" style="width:60px" id="gy${i}"></td>
+      <td><input value="${g.amount}" style="width:100px" id="gm${i}"></td>
+      <td><button class="btn btn-red btn-icon" onclick="deleteGrantRow(${i})" title="Delete">🗑</button></td>
+    </tr>`;
+  });
+}
+function addGrantRow(){
+  const newSeq=localGrants.length+1;
+  localGrants.push({seq:newSeq,title:'New Project',agency:'Agency Name',year:new Date().getFullYear(),amount:0});
+  openGrantsEdit();
+}
+function deleteGrantRow(i){
+  localGrants.splice(i,1);
+  localGrants.forEach((g,j)=>g.seq=j+1);
+  openGrantsEdit();
+  showToast('🗑 Row deleted');
+}
+function saveGrants(){
+  const rows=document.getElementById('editGrantsBody').querySelectorAll('tr');
+  localGrants=[];
+  rows.forEach((r,i)=>{
+    localGrants.push({
+      seq:+r.querySelector(`#gs${i}`).value||i+1,
+      title:r.querySelector(`#gt${i}`).value,
+      agency:r.querySelector(`#ga${i}`).value,
+      year:+r.querySelector(`#gy${i}`).value,
+      amount:+r.querySelector(`#gm${i}`).value,
+    });
+  });
+  refreshAll();
+  closeModal('modalGrants');
+  showToast('✅ Grants updated!');
+}
+
+/* ── CB EDIT MODAL ───────────────────────────────────────── */
+function openCBEdit(){
+  const tb=document.getElementById('editCBBody'); tb.innerHTML='';
+  cbData.forEach((r,i)=>{
+    tb.innerHTML+=`<tr>
+      <td><input value="${r.year}" style="width:55px" id="cby${i}"></td>
+      <td><input value="${esc(r.date)}" style="width:110px" id="cbd${i}"></td>
+      <td><input value="${esc(r.activity)}" id="cba${i}"></td>
+      <td><input value="${esc(r.venue)}" id="cbv${i}"></td>
+      <td><input value="${r.participants||''}" style="width:70px" id="cbp${i}"></td>
+      <td><select id="cbr${i}" style="width:70px"><option value="1" ${r.report?'selected':''}>Yes</option><option value="0" ${!r.report?'selected':''}>No</option></select></td>
+      <td><button class="btn btn-red btn-icon" onclick="deleteCBRow(${i})" title="Delete">🗑</button></td>
+    </tr>`;
+  });
+}
+function addCBRow(){
+  cbData.unshift({year:new Date().getFullYear(),date:'',activity:'New Activity',venue:'',participants:null,report:false});
+  openCBEdit();
+}
+function deleteCBRow(i){cbData.splice(i,1);openCBEdit();showToast('🗑 Row deleted');}
+function saveCB(){
+  const rows=document.getElementById('editCBBody').querySelectorAll('tr');
+  cbData=[];
+  rows.forEach((r,i)=>{
+    cbData.push({
+      year:+r.querySelector(`#cby${i}`).value,
+      date:r.querySelector(`#cbd${i}`).value,
+      activity:r.querySelector(`#cba${i}`).value,
+      venue:r.querySelector(`#cbv${i}`).value,
+      participants:r.querySelector(`#cbp${i}`).value?+r.querySelector(`#cbp${i}`).value:null,
+      report:r.querySelector(`#cbr${i}`).value==='1',
+    });
+  });
+  refreshAll();
+  closeModal('modalCB');
+  showToast('✅ Capacity Building updated!');
+}
+
+/* ── PRES EDIT MODAL ─────────────────────────────────────── */
+function openPresEdit(){
+  const tb=document.getElementById('editPresBody'); tb.innerHTML='';
+  presData.forEach((r,i)=>{
+    tb.innerHTML+=`<tr>
+      <td><input value="${r.year}" style="width:55px" id="pey${i}"></td>
+      <td><input value="${esc(r.name)}" style="width:120px" id="pen${i}"></td>
+      <td><input value="${esc(r.title)}" id="pet${i}"></td>
+      <td><input value="${esc(r.dept)}" style="width:65px" id="ped${i}"></td>
+      <td><input value="${r.subsidy}" style="width:80px" id="pes${i}"></td>
+      <td><select id="pest${i}" style="width:105px"><option value="Presentation" ${r.status==='Presentation'?'selected':''}>Presentation</option><option value="Publication" ${r.status==='Publication'?'selected':''}>Publication</option><option value="" ${!r.status?'selected':''}>–</option></select></td>
+      <td><button class="btn btn-red btn-icon" onclick="deletePresRow(${i})" title="Delete">🗑</button></td>
+    </tr>`;
+  });
+}
+function addPresRow(){
+  presData.unshift({year:new Date().getFullYear(),name:'Researcher Name',title:'Paper Title',dept:'DEPT',subsidy:0,status:'Presentation'});
+  openPresEdit();
+}
+function deletePresRow(i){presData.splice(i,1);openPresEdit();showToast('🗑 Row deleted');}
+function savePres(){
+  const rows=document.getElementById('editPresBody').querySelectorAll('tr');
+  presData=[];
+  rows.forEach((r,i)=>{
+    presData.push({
+      year:+r.querySelector(`#pey${i}`).value,
+      name:r.querySelector(`#pen${i}`).value,
+      title:r.querySelector(`#pet${i}`).value,
+      dept:r.querySelector(`#ped${i}`).value,
+      subsidy:+r.querySelector(`#pes${i}`).value,
+      status:r.querySelector(`#pest${i}`).value,
+    });
+  });
+  refreshAll();
+  closeModal('modalPres');
+  showToast('✅ Presentations updated!');
+}
+
+/* ── REFRESH ALL ─────────────────────────────────────────── */
+function refreshAll(){
+  buildCharts();
+  renderGrants(localGrants);
+  renderCBTable(cbData);
+  renderPresTable(presData);
+  buildTrackerCharts();
+}
+
+/* ── TABLE RENDERERS ─────────────────────────────────────── */
+const dC={CITCS:'b-blue',CEA:'b-orange',CONAHS:'b-teal',CCJE:'b-purple',CTE:'b-pink',NTS:'b-yellow',CAS:'b-green',CHTM:'b-red',CBA:'b-gray',COA:'b-indigo',COE:'b-orange',RSO:'b-teal'};
+const aC={'DOST PCIERRD':'b-blue','DOST-GIA':'b-teal','CHED COE':'b-purple','NRCP':'b-orange','CHED RECPE':'b-green','DODT-GODDESS':'b-pink','DILG-CSIC':'b-yellow'};
+function dB(d){return`<span class="badge ${dC[d]||'b-gray'}">${d}</span>`}
+function aB(a){return`<span class="badge ${aC[a]||'b-gray'}">${a}</span>`}
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+function renderGrants(data){
+  const tb=document.getElementById('grantsTableBody');tb.innerHTML='';
+  data.forEach(g=>{tb.innerHTML+=`<tr><td><span class="badge b-gray">${g.seq}</span></td><td><strong>${g.title}</strong></td><td>${aB(g.agency)}</td><td>${g.year}</td><td class="amt">₱${g.amount.toLocaleString()}</td></tr>`;});
+}
+function filterGrants(){
+  const q=document.getElementById('grantsSearch').value.toLowerCase();
+  renderGrants(localGrants.filter(g=>g.title.toLowerCase().includes(q)||g.agency.toLowerCase().includes(q)||String(g.year).includes(q)));
+}
+
+function renderCBTable(data){
+  const tb=document.getElementById('cbTableBody');tb.innerHTML='';
+  data.forEach(r=>{tb.innerHTML+=`<tr><td><strong>${r.year}</strong></td><td style="white-space:nowrap;font-size:12px">${r.date}</td><td>${r.activity}</td><td style="font-size:12px;color:#6b7280">${r.venue}</td><td style="text-align:center">${r.participants??'–'}</td><td style="text-align:center">${r.report?'<span class="badge b-green">✔ Yes</span>':'<span class="badge b-gray">–</span>'}</td></tr>`;});
+}
+function filterCBTable(){
+  const y=document.getElementById('cbYearFilter').value;
+  const q=(document.getElementById('cbSearch').value||'').toLowerCase();
+  renderCBTable(cbData.filter(r=>(y==='all'||r.year==y)&&(!q||r.activity.toLowerCase().includes(q)||r.venue.toLowerCase().includes(q))));
+}
+
+function renderPresTable(data){
+  const tb=document.getElementById('presTableBody');tb.innerHTML='';
+  data.forEach(r=>{
+    const sc=r.status==='Publication'?'b-teal':'b-blue';
+    tb.innerHTML+=`<tr><td><strong>${r.year}</strong></td><td style="white-space:nowrap;font-size:12px">${r.name}</td><td style="font-size:12px">${r.title}</td><td>${dB(r.dept)}</td><td class="amt">₱${r.subsidy.toLocaleString()}</td><td>${r.status?`<span class="badge ${sc}">${r.status}</span>`:'–'}</td></tr>`;
+  });
+}
+function filterPresTable(){
+  const y=document.getElementById('presYearFilter').value;
+  const d=document.getElementById('presDeptFilter').value;
+  const s=document.getElementById('presStatusFilter').value;
+  const q=(document.getElementById('presSearch').value||'').toLowerCase();
+  renderPresTable(presData.filter(r=>(y==='all'||r.year==y)&&(d==='all'||r.dept===d)&&(s==='all'||r.status===s)&&(!q||r.name.toLowerCase().includes(q)||r.title.toLowerCase().includes(q))));
+}
+
+/* ── TAB SWITCHING ───────────────────────────────────────── */
+const PT={overview:'📊 Overview',grants:'💰 Grants',capacity:'🎓 Capacity Building',presentations:'📄 Presentations & Publications',tracker:'🎯 DOST-GIA Tracker',rsoservices:'🛎️ RSO Services'};
+function switchTab(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('pageTitle').textContent=PT[id];
+}
+
+/* ── MODALS ──────────────────────────────────────────────── */
+function openModal(id){
+  if(id==='modalGrants') openGrantsEdit();
+  if(id==='modalCB') openCBEdit();
+  if(id==='modalPres') openPresEdit();
+  if(id==='modalRSO') openRSOEdit();
+  if(id==='modalTrackerEdit') openTrackerEdit();
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});
+});
+
+/* ── TOAST ───────────────────────────────────────────────── */
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ── CSV EXPORT ──────────────────────────────────────────── */
+function exportTableCSV(tableId,name){
+  const tbl=document.getElementById(tableId);if(!tbl){showToast('⚠ No table.');return;}
+  let csv='';
+  tbl.querySelectorAll('tr').forEach(row=>{
+    csv+=[...row.querySelectorAll('th,td')].map(c=>'"'+c.innerText.replace(/\n/g,' ').replace(/"/g,'""')+'"').join(',')+'\n';
+  });
+  dl(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),`UC_RSO_${name}_${today()}.csv`);
+  showToast('✅ CSV downloaded!');closeModal('modalDownload');
+}
+function exportCSV(){
+  const id=document.querySelector('.page.active').id;
+  const m={overview:'grantsTable',grants:'grantsTable',capacity:'cbTable',presentations:'presTable',rsoservices:'rsoTable'};
+  exportTableCSV(m[id],id);
+}
+function exportJSON(){
+  const id=document.querySelector('.page.active').id;
+  const map={overview:{grants:localGrants,cb:cbData,presentations:presData,rsoServices:rsoData},grants:localGrants,capacity:cbData,presentations:presData,rsoservices:rsoData};
+  dl(new Blob([JSON.stringify(map[id],null,2)],{type:'application/json'}),`UC_RSO_${id}_${today()}.json`);
+  showToast('✅ JSON downloaded!');closeModal('modalDownload');
+}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+function today(){return new Date().toISOString().slice(0,10);}
+function printReport(){window.print();closeModal('modalDownload');}
+
+/* ── RSO SERVICES DATA ───────────────────────────────────── */
+let rsoData = [
+  /* Template rows – replace or delete and add your own records */
+  /* {year:2024, date:'Jan 10, 2024', service:'Statistical Treatment', title:'Sample Study Title', college:'CITCS'}, */
+];
+
+/* ── RSO SERVICES CHARTS & KPIs ──────────────────────────── */
+function buildRSOCharts(){
+  /* KPIs */
+  const total=rsoData.length;
+  const uniqueServices=[...new Set(rsoData.map(r=>r.service).filter(Boolean))];
+  const uniqueColleges=[...new Set(rsoData.map(r=>r.college).filter(Boolean))];
+  const years=[...new Set(rsoData.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a);
+  document.getElementById('rsoKPI1').textContent=total||'0';
+  document.getElementById('rsoKPI2').textContent=uniqueServices.length||'0';
+  document.getElementById('rsoKPI3').textContent=uniqueColleges.length||'0';
+  document.getElementById('rsoKPI4').textContent=years[0]||'–';
+
+  /* update filter dropdowns */
+  const yf=document.getElementById('rsoYearFilter');
+  const cf=document.getElementById('rsoCollegeFilter');
+  const sf=document.getElementById('rsoServiceFilter');
+  const selY=yf.value, selC=cf.value, selS=sf.value;
+  yf.innerHTML='<option value="all">All years</option>'+[...new Set(rsoData.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a).map(y=>`<option value="${y}" ${selY==y?'selected':''}>${y}</option>`).join('');
+  cf.innerHTML='<option value="all">All Colleges</option>'+uniqueColleges.sort().map(c=>`<option value="${c}" ${selC===c?'selected':''}>${c}</option>`).join('');
+  sf.innerHTML='<option value="all">All Services</option>'+uniqueServices.sort().map(s=>`<option value="${s}" ${selS===s?'selected':''}>${s}</option>`).join('');
+
+  if(total===0){
+    /* empty state charts */
+    makeChart('rsoYearChart',{type:'bar',data:{labels:['No data yet'],datasets:[{data:[0],backgroundColor:'#e5e7eb',borderRadius:6}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+    makeChart('rsoCollegePie',{type:'doughnut',data:{labels:['Add data to see chart'],datasets:[{data:[1],backgroundColor:['#e5e7eb'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false}}}});
+    document.getElementById('rsoServiceBars').innerHTML='<p style="color:#9ca3af;font-size:13px;padding:12px 0">No data yet. Click <strong>✏️ Edit Data</strong> to add RSO service records.</p>';
+    return;
+  }
+
+  /* services by year */
+  const byYear={};
+  rsoData.forEach(r=>{if(r.year) byYear[r.year]=(byYear[r.year]||0)+1;});
+  const yrs=Object.keys(byYear).sort();
+  makeChart('rsoYearChart',{type:'bar',data:{labels:yrs,datasets:[{data:yrs.map(y=>byYear[y]),backgroundColor:MULTI.slice(0,yrs.length),borderRadius:6,borderSkipped:false}]},options:{...BO,scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}});
+
+  /* by college pie */
+  const byCol={};
+  rsoData.forEach(r=>{if(r.college) byCol[r.college]=(byCol[r.college]||0)+1;});
+  const cols=Object.keys(byCol).sort((a,b)=>byCol[b]-byCol[a]);
+  makeChart('rsoCollegePie',{type:'doughnut',data:{labels:cols,datasets:[{data:cols.map(c=>byCol[c]),backgroundColor:MULTI,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},color:TC,padding:8,usePointStyle:true}}}}});
+
+  /* service type bars */
+  const bySvc={};
+  rsoData.forEach(r=>{if(r.service) bySvc[r.service]=(bySvc[r.service]||0)+1;});
+  const svcSorted=Object.keys(bySvc).sort((a,b)=>bySvc[b]-bySvc[a]);
+  const el=document.getElementById('rsoServiceBars'); el.innerHTML='';
+  const maxS=bySvc[svcSorted[0]]||1;
+  svcSorted.forEach((s,i)=>{
+    el.innerHTML+=`<div class="bar-row"><div class="bar-label" style="width:180px">${s}</div><div class="bar-track"><div class="bar-fill" style="width:${(bySvc[s]/maxS*100).toFixed(1)}%;background:linear-gradient(90deg,${MULTI[i%MULTI.length]},${MULTI[i%MULTI.length]}bb)"></div></div><div class="bar-val">${bySvc[s]} record${bySvc[s]>1?'s':''}</div></div>`;
+  });
+}
+
+/* ── RSO TABLE ───────────────────────────────────────────── */
+function renderRSOTable(data){
+  const tb=document.getElementById('rsoTableBody'); tb.innerHTML='';
+  if(data.length===0){
+    tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:28px;color:#9ca3af">No records found. Click <strong>✏️ Edit Data</strong> to add RSO service records.</td></tr>`;
+    return;
+  }
+  data.forEach((r,i)=>{
+    const collegeBadge=dB(r.college||'–');
+    tb.innerHTML+=`<tr>
+      <td style="color:#9ca3af;font-size:12px">${i+1}</td>
+      <td><strong>${r.year||'–'}</strong></td>
+      <td style="white-space:nowrap;font-size:12px">${r.date||'–'}</td>
+      <td><span class="badge b-purple" style="white-space:normal">${r.service||'–'}</span></td>
+      <td style="font-size:12px">${r.title||'–'}</td>
+      <td>${collegeBadge}</td>
+    </tr>`;
+  });
+}
+function filterRSOTable(){
+  const y=document.getElementById('rsoYearFilter').value;
+  const c=document.getElementById('rsoCollegeFilter').value;
+  const s=document.getElementById('rsoServiceFilter').value;
+  const q=(document.getElementById('rsoSearch').value||'').toLowerCase();
+  renderRSOTable(rsoData.filter(r=>
+    (y==='all'||r.year==y)&&
+    (c==='all'||r.college===c)&&
+    (s==='all'||r.service===s)&&
+    (!q||((r.title||'').toLowerCase().includes(q)||(r.service||'').toLowerCase().includes(q)||(r.college||'').toLowerCase().includes(q)))
+  ));
+}
+
+/* ── RSO EDIT MODAL ──────────────────────────────────────── */
+function openRSOEdit(){
+  const tb=document.getElementById('editRSOBody'); tb.innerHTML='';
+  rsoData.forEach((r,i)=>{
+    tb.innerHTML+=`<tr>
+      <td><input value="${r.year||''}" style="width:55px" id="rsoy${i}"></td>
+      <td><input value="${esc(r.date||'')}" style="width:100px" id="rsod${i}"></td>
+      <td><input value="${esc(r.service||'')}" id="rsos${i}"></td>
+      <td><input value="${esc(r.title||'')}" id="rsot${i}"></td>
+      <td><input value="${esc(r.college||'')}" style="width:70px" id="rsoc${i}"></td>
+      <td><button class="btn btn-red btn-icon" onclick="deleteRSORow(${i})" title="Delete">🗑</button></td>
+    </tr>`;
+  });
+  if(rsoData.length===0){
+    tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:18px;color:#9ca3af;font-size:13px">No records yet. Click <strong>＋ Add Row</strong> above to start adding data.</td></tr>`;
+  }
+}
+function addRSORow(){
+  rsoData.unshift({year:new Date().getFullYear(),date:'',service:'',title:'',college:''});
+  openRSOEdit();
+}
+function deleteRSORow(i){rsoData.splice(i,1);openRSOEdit();showToast('🗑 Row deleted');}
+function saveRSO(){
+  const rows=document.getElementById('editRSOBody').querySelectorAll('tr');
+  rsoData=[];
+  rows.forEach((r,i)=>{
+    const y=r.querySelector(`#rsoy${i}`);
+    if(!y) return; /* skip empty-state placeholder row */
+    rsoData.push({
+      year:r.querySelector(`#rsoy${i}`).value?+r.querySelector(`#rsoy${i}`).value:null,
+      date:r.querySelector(`#rsod${i}`).value,
+      service:r.querySelector(`#rsos${i}`).value,
+      title:r.querySelector(`#rsot${i}`).value,
+      college:r.querySelector(`#rsoc${i}`).value,
+    });
+  });
+  buildRSOCharts();
+  renderRSOTable(rsoData);
+  closeModal('modalRSO');
+  showToast('✅ RSO Services updated!');
+}
+
+// PT already initialized with all tabs above
+
+/* ═══════════════════════════════════════════════════════════
+   DOST-GIA TRACKER — charts, table, edit, import, backup
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── helpers ─────────────────────────────────────────────── */
+function trYearTotals(){
+  // returns {year: {submitted, funded}}
+  const out={};
+  trackerData.years.forEach(y=>{out[y]={submitted:0,funded:0};});
+  trackerData.rows.forEach(row=>{
+    trackerData.years.forEach(y=>{
+      const c=row.cells[y]||[0,0,0];
+      out[y].submitted+=(c[1]||0);
+      out[y].funded+=(c[2]||0);
+    });
+  });
+  return out;
+}
+function trCollegeTotals(){
+  // returns [{college, submitted, funded}]
+  return trackerData.rows.map(row=>{
+    let s=0,f=0;
+    trackerData.years.forEach(y=>{const c=row.cells[y]||[0,0,0];s+=(c[1]||0);f+=(c[2]||0);});
+    return {college:row.college,submitted:s,funded:f};
+  }).sort((a,b)=>b.submitted-a.submitted);
+}
+
+/* ── build tracker charts ─────────────────────────────────── */
+function buildTrackerCharts(){
+  const yt=trYearTotals();
+  const yrs=trackerData.years;
+  const submitted=yrs.map(y=>yt[y].submitted);
+  const funded=yrs.map(y=>yt[y].funded);
+  const rates=yrs.map(y=>yt[y].submitted>0?+(yt[y].funded/yt[y].submitted*100).toFixed(1):0);
+
+  /* KPIs */
+  const totS=submitted.reduce((a,v)=>a+v,0);
+  const totF=funded.reduce((a,v)=>a+v,0);
+  const activeYrs=yrs.filter((_,i)=>submitted[i]>0&&yrs[i]<2025);
+  const avgRate=activeYrs.length?+(activeYrs.reduce((a,y)=>{const t=yt[y];return a+(t.funded/t.submitted*100);},0)/activeYrs.length).toFixed(1):0;
+  const bestYr=yrs.reduce((best,y,i)=>rates[i]>rates[yrs.indexOf(best)]?y:best,yrs[0]);
+  const ct=trCollegeTotals();
+  const topCol=ct[0]||{college:'–',submitted:0};
+
+  document.getElementById('trKPI1').textContent=avgRate+'%';
+  document.getElementById('trKPI1sub').textContent='Avg 2020–2024 (excl. 2025)';
+  document.getElementById('trKPI2').textContent=totS;
+  document.getElementById('trKPI3').textContent=totF;
+  document.getElementById('trKPI4').textContent=bestYr;
+  document.getElementById('trKPI4sub').textContent=rates[yrs.indexOf(bestYr)]+'% success rate';
+  document.getElementById('trKPI5').textContent=topCol.college;
+  document.getElementById('trKPI5sub').textContent=topCol.submitted+' proposals submitted';
+
+  /* success rate line chart */
+  const elRate=document.getElementById('trRateChart');
+  if(elRate){
+    makeChart('trRateChart',{
+      type:'line',
+      data:{labels:yrs,datasets:[{
+        label:'Success Rate (%)',data:rates,
+        borderColor:'#f7971e',backgroundColor:'rgba(247,151,30,.12)',
+        fill:true,tension:.35,pointRadius:6,borderWidth:2.5,
+        pointBackgroundColor:rates.map(r=>r>=40?'#11998e':r>0?'#f7971e':'#e5e7eb'),
+        pointBorderColor:'#fff',pointBorderWidth:2
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y}% funded`}}},
+        scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},
+          y:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'},min:0,max:70}}}
+    });
+  }
+
+  /* submitted vs funded grouped bar */
+  const elVol=document.getElementById('trVolChart');
+  if(elVol){
+    makeChart('trVolChart',{
+      type:'bar',
+      data:{labels:yrs,datasets:[
+        {label:'Submitted',data:submitted,backgroundColor:'rgba(102,126,234,.8)',borderRadius:4,borderSkipped:false},
+        {label:'Funded',data:funded,backgroundColor:'rgba(56,239,125,.85)',borderRadius:4,borderSkipped:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},
+          y:{grid:{color:GC},ticks:{color:TC,font:{size:11}},min:0}}}
+    });
+  }
+
+  /* college horizontal bars */
+  const el=document.getElementById('trCollegeBars');
+  if(el){
+    el.innerHTML='';
+    const maxS=ct[0]?ct[0].submitted:1;
+    ct.forEach((r,i)=>{
+      if(r.submitted===0&&r.funded===0) return;
+      el.innerHTML+=`<div class="bar-row">
+        <div class="bar-label" style="width:65px;font-size:12px">${r.college}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(r.submitted/maxS*100).toFixed(1)}%;background:linear-gradient(90deg,${MULTI[i%MULTI.length]},${MULTI[i%MULTI.length]}bb)"></div></div>
+        <div class="bar-val" style="width:120px;font-size:12px"><span style="color:#667eea;font-weight:700">${r.submitted} sub</span> · <span style="color:#11998e;font-weight:700">${r.funded} fund</span></div>
+      </div>`;
+    });
+  }
+
+  renderTrackerTable();
+}
+
+/* ── render tracker display table ────────────────────────── */
+function renderTrackerTable(){
+  const metric=(document.getElementById('trMetricFilter')||{}).value||'all';
+  const yrs=trackerData.years;
+
+  /* header */
+  const head=document.getElementById('trackerDisplayHead');
+  let hRow='<tr><th>College</th>';
+  yrs.forEach(y=>hRow+=`<th style="text-align:center">${y}</th>`);
+  hRow+='<th style="text-align:center">Total S</th><th style="text-align:center">Total F</th></tr>';
+  head.innerHTML=hRow;
+
+  /* body */
+  const body=document.getElementById('trackerDisplayBody');
+  body.innerHTML='';
+  trackerData.rows.forEach(row=>{
+    let totS=0,totF=0;
+    let tr=`<tr><td><strong>${row.college}</strong></td>`;
+    yrs.forEach(y=>{
+      const c=row.cells[y]||[0,0,0];
+      const a=c[0]||0,s=c[1]||0,f=c[2]||0;
+      totS+=s; totF+=f;
+      if(s===0&&f===0&&a===0){tr+=`<td style="text-align:center;color:#d1d5db">–</td>`;return;}
+      if(metric==='submitted'){
+        tr+=`<td style="text-align:center;font-size:12px">${s>0?`<span style="color:#667eea;font-weight:700">${s}</span>`:'–'}</td>`;
+      } else if(metric==='funded'){
+        tr+=`<td style="text-align:center;font-size:12px">${f>0?`<span style="color:#11998e;font-weight:800">${f}</span>`:'–'}</td>`;
+      } else {
+        const parts=[];
+        if(a>0) parts.push(`<span style="color:#374151">${a}</span>`);
+        if(s>0) parts.push(`<span style="color:#667eea;font-weight:700">${s}</span>`);
+        if(f>0) parts.push(`<span style="color:#11998e;font-weight:800">${f}</span>`);
+        tr+=`<td style="text-align:center;font-size:12px;white-space:nowrap">${parts.join('<span style="color:#e5e7eb">/</span>')}</td>`;
+      }
+    });
+    tr+=`<td style="text-align:center;font-weight:700;color:#667eea">${totS||'–'}</td>`;
+    tr+=`<td style="text-align:center;font-weight:800;color:${totF>0?'#11998e':'#9ca3af'}">${totF||'–'}</td>`;
+    tr+='</tr>';
+    body.innerHTML+=tr;
+  });
+
+  /* totals row */
+  let tR='<tr style="background:#f0fdf4;border-top:2px solid #a7f3d0"><td style="font-weight:700">TOTAL</td>';
+  let gS=0,gF=0;
+  const yt=trYearTotals();
+  yrs.forEach(y=>{
+    gS+=yt[y].submitted; gF+=yt[y].funded;
+    tR+=`<td style="text-align:center;font-size:12px;white-space:nowrap"><span style="color:#667eea;font-weight:700">${yt[y].submitted}</span><span style="color:#d1d5db">/</span><span style="color:#11998e;font-weight:800">${yt[y].funded}</span></td>`;
+  });
+  tR+=`<td style="text-align:center;font-weight:800;color:#667eea">${gS}</td><td style="text-align:center;font-weight:800;color:#11998e">${gF}</td></tr>`;
+  body.innerHTML+=tR;
+}
+
+/* ── parse cell string to [A,S,F] ─────────────────────────── */
+function parseCell(str){
+  if(!str||str.trim()===''||str.trim()==='–'||str.trim()==='-') return [0,0,0];
+  const parts=str.trim().split('/').map(p=>parseInt(p)||0);
+  if(parts.length===3) return parts;
+  if(parts.length===2) return [0,parts[0],parts[1]];
+  if(parts.length===1) return [0,parts[0],0];
+  return [0,0,0];
+}
+function cellStr(c){
+  if(!c||(!c[0]&&!c[1]&&!c[2])) return '–';
+  if(c[0]) return `${c[0]}/${c[1]}/${c[2]}`;
+  if(c[1]) return `${c[1]}/${c[2]}`;
+  return '–';
+}
+
+/* ── tracker edit modal ──────────────────────────────────── */
+function openTrackerEdit(){
+  const yrs=trackerData.years;
+  /* head */
+  let hRow='<tr><th>College</th>';
+  yrs.forEach(y=>hRow+=`<th style="text-align:center">${y}</th>`);
+  hRow+='<th></th></tr>';
+  document.getElementById('trackerEditHead').innerHTML=hRow;
+  /* body */
+  const body=document.getElementById('trackerEditBody');
+  body.innerHTML='';
+  trackerData.rows.forEach((row,ri)=>{
+    let tr=`<tr id="trrow_${ri}"><td><input value="${esc(row.college)}" id="trc_${ri}" style="width:70px;font-weight:600"></td>`;
+    yrs.forEach(y=>{
+      const v=cellStr(row.cells[y]||[0,0,0]);
+      tr+=`<td><input value="${v==='–'?'':v}" id="trcell_${ri}_${y}" placeholder="–" style="width:72px;text-align:center;font-size:12px;font-family:monospace"></td>`;
+    });
+    tr+=`<td><button class="btn btn-red btn-icon" onclick="deleteTrackerRow(${ri})">🗑</button></td></tr>`;
+    body.innerHTML+=tr;
+  });
+}
+function addTrackerRow(){
+  trackerData.rows.push({college:'NEW',cells:{}});
+  openTrackerEdit();
+}
+function addTrackerYear(){
+  const yr=parseInt(prompt('Enter year to add (e.g. 2026):'));
+  if(!yr||isNaN(yr)){showToast('⚠ Invalid year');return;}
+  if(trackerData.years.includes(yr)){showToast('Year already exists');return;}
+  trackerData.years.push(yr);
+  trackerData.years.sort();
+  trackerData.rows.forEach(r=>{r.cells[yr]=r.cells[yr]||[0,0,0];});
+  openTrackerEdit();
+  showToast(`✅ Year ${yr} added`);
+}
+function deleteTrackerRow(ri){
+  trackerData.rows.splice(ri,1);
+  openTrackerEdit();
+  showToast('🗑 Row deleted');
+}
+function saveTrackerEdit(){
+  const yrs=trackerData.years;
+  trackerData.rows.forEach((row,ri)=>{
+    const colEl=document.getElementById(`trc_${ri}`);
+    if(colEl) row.college=colEl.value.trim()||row.college;
+    yrs.forEach(y=>{
+      const el=document.getElementById(`trcell_${ri}_${y}`);
+      if(el) row.cells[y]=parseCell(el.value);
+    });
+  });
+  buildTrackerCharts();
+  closeModal('modalTrackerEdit');
+  showToast('✅ Tracker updated!');
+}
+
+/* ── CSV import ──────────────────────────────────────────── */
+function handleCSVFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    document.getElementById('csvPasteArea').value=ev.target.result;
+    document.getElementById('csvPreviewMsg').textContent=`📄 File loaded: ${f.name}`;
+  };
+  reader.readAsText(f);
+}
+function importCSV(){
+  const raw=document.getElementById('csvPasteArea').value.trim();
+  if(!raw){showToast('⚠ No CSV data');return;}
+  try{
+    const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+    const header=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+    /* find year columns (skip COLLEGE, TOTAL S, TOTAL F) */
+    const yearCols=[];
+    header.forEach((h,i)=>{
+      const y=parseInt(h);
+      if(!isNaN(y)&&y>2000) yearCols.push({col:i,year:y});
+    });
+    const newYears=yearCols.map(yc=>yc.year).sort();
+    const newRows=[];
+    for(let i=1;i<lines.length;i++){
+      const parts=lines[i].split(',').map(p=>p.replace(/^"|"$/g,'').trim());
+      const college=parts[0];
+      if(!college||college.toUpperCase()==='TOTAL') continue;
+      const cells={};
+      yearCols.forEach(yc=>{
+        cells[yc.year]=parseCell(parts[yc.col]||'–');
+      });
+      newRows.push({college,cells});
+    }
+    if(newRows.length===0){showToast('⚠ No rows found');return;}
+    trackerData={years:newYears,rows:newRows};
+    buildTrackerCharts();
+    closeModal('modalCSVImport');
+    document.getElementById('csvPasteArea').value='';
+    document.getElementById('csvPreviewMsg').textContent='';
+    showToast(`✅ Imported ${newRows.length} colleges, ${newYears.length} years`);
+  } catch(err){
+    showToast('❌ CSV parse error: '+err.message);
+  }
+}
+
+/* ── backup / restore ────────────────────────────────────── */
+function getAllData(){
+  return {
+    _version:2,
+    _exported:new Date().toISOString(),
+    grants:localGrants,
+    cb:cbData,
+    presentations:presData,
+    rsoServices:rsoData,
+    tracker:trackerData,
+    overviewKPIs:overviewKPIs
+  };
+}
+function downloadBackup(){
+  const d=getAllData();
+  dl(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),`UC_RSO_Backup_${today()}.json`);
+  showToast('✅ Backup downloaded!');
+}
+function downloadTrackerCSV(){
+  const yrs=trackerData.years;
+  let csv='"COLLEGE",'+yrs.map(y=>`"${y}"`).join(',')+`,"TOTAL S","TOTAL F"\n`;
+  trackerData.rows.forEach(row=>{
+    let totS=0,totF=0;
+    const cells=yrs.map(y=>{const c=row.cells[y]||[0,0,0];totS+=(c[1]||0);totF+=(c[2]||0);return`"${cellStr(c)}"`;});
+    csv+=`"${row.college}",${cells.join(',')},${totS},${totF}\n`;
+  });
+  const yt=trYearTotals();
+  let tS=0,tF=0;
+  const totCells=yrs.map(y=>{tS+=yt[y].submitted;tF+=yt[y].funded;return`"${yt[y].submitted}/${yt[y].funded}"`;});
+  csv+=`"TOTAL",${totCells.join(',')},${tS},${tF}\n`;
+  dl(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),`UC_RSO_DOST_GIA_Tracker_${today()}.csv`);
+  showToast('✅ Tracker CSV downloaded!');
+}
+function downloadHTML(){
+  /* inject current data into a copy of this page's HTML */
+  const src=document.documentElement.outerHTML;
+  /* replace the data declarations in the script with current live values */
+  const patch=src
+    .replace(/let localGrants\s*=\s*\[[\s\S]*?\];/,`let localGrants = ${JSON.stringify(localGrants,null,2)};`)
+    .replace(/let cbData\s*=\s*\[[\s\S]*?\];/,`let cbData = ${JSON.stringify(cbData,null,2)};`)
+    .replace(/let presData\s*=\s*\[[\s\S]*?\];/,`let presData = ${JSON.stringify(presData,null,2)};`)
+    .replace(/let rsoData\s*=\s*\[[\s\S]*?\];/,`let rsoData = ${JSON.stringify(rsoData,null,2)};`)
+    .replace(/let trackerData\s*=\s*\{[\s\S]*?\n\};/,`let trackerData = ${JSON.stringify(trackerData,null,2)};`)
+    .replace(/let overviewKPIs\s*=\s*\[[\s\S]*?\];/,`let overviewKPIs = ${JSON.stringify(overviewKPIs,null,2)};`);
+  dl(new Blob([patch],{type:'text/html;charset=utf-8'}),`UC_RSO_Dashboard_${today()}.html`);
+  showToast('✅ Dashboard HTML saved!');
+}
+function handleRestoreFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d._version||(!d.grants&&!d.tracker)){
+        document.getElementById('restoreMsg').innerHTML='<span style="color:#dc2626">❌ Invalid backup file.</span>';
+        return;
+      }
+      document.getElementById('restoreMsg').innerHTML=`<span style="color:#11998e">✅ Valid backup from ${d._exported?new Date(d._exported).toLocaleString():'unknown date'}. Click Restore below.</span>`;
+      /* store parsed data pending confirmation */
+      window._pendingRestore=d;
+      /* add confirm button */
+      const foot=document.querySelector('#modalBackup .modal-foot');
+      let btn=document.getElementById('restoreConfirmBtn');
+      if(!btn){
+        btn=document.createElement('button');
+        btn.id='restoreConfirmBtn';
+        btn.className='btn btn-red';
+        btn.textContent='⚠ Restore Now';
+        btn.onclick=applyRestore;
+        foot.insertBefore(btn,foot.firstChild);
+      }
+    } catch(err){
+      document.getElementById('restoreMsg').innerHTML=`<span style="color:#dc2626">❌ Parse error: ${err.message}</span>`;
+    }
+  };
+  reader.readAsText(f);
+}
+function applyRestore(){
+  const d=window._pendingRestore;
+  if(!d){showToast('⚠ No backup loaded');return;}
+  if(d.grants) localGrants=d.grants;
+  if(d.cb) cbData=d.cb;
+  if(d.presentations) presData=d.presentations;
+  if(d.rsoServices) rsoData=d.rsoServices;
+  if(d.tracker) trackerData=d.tracker;
+  if(d.overviewKPIs) overviewKPIs=d.overviewKPIs;
+  refreshAll();
+  buildRSOCharts();
+  renderRSOTable(rsoData);
+  closeModal('modalBackup');
+  showToast('✅ Dashboard restored from backup!');
+  const btn=document.getElementById('restoreConfirmBtn');
+  if(btn) btn.remove();
+}
+
+/* ── openModal consolidated (tracker + all sections) ─────── */
+// Already handles all modals in the base definition above
+// Tracker open is called here:
+const _openModalOrig = openModal;
+function openModal(id){
+  if(id==='modalTrackerEdit') openTrackerEdit();
+  // Call the original but avoid infinite recursion
+  if(id==='modalGrants') openGrantsEdit();
+  else if(id==='modalCB') openCBEdit();
+  else if(id==='modalPres') openPresEdit();
+  else if(id==='modalRSO') openRSOEdit();
+  document.getElementById(id).classList.add('open');
+}
+
+/* ── refreshAll includes tracker (already in base) ──────── */
+// refreshAll is consolidated in base function - no re-patch needed
+
+/* ── INIT ────────────────────────────────────────────────── */
+buildCharts();
+renderGrants(localGrants);
+renderCBTable(cbData);
+renderPresTable(presData);
+buildRSOCharts();
+renderRSOTable(rsoData);
+buildTrackerCharts();
+
+
+/* ════════════════════════════════════════════════════════════
+   ENHANCED FEATURES v4 — All new functionality
+   ════════════════════════════════════════════════════════════ */
+
+/* ── UNDO SYSTEM ─────────────────────────────────────────── */
+let _undoStack = []; // {type, data, index}
+let _undoTimer = null;
+
+function pushUndo(type, data, index) {
+  _undoStack = [{type, data, index}]; // keep only last action
+  const bar = document.getElementById('undoBar');
+  document.getElementById('undoMsg').textContent = `Row deleted from ${type}`;
+  bar.classList.add('show');
+  clearTimeout(_undoTimer);
+  _undoTimer = setTimeout(() => { bar.classList.remove('show'); _undoStack=[]; }, 5000);
+}
+
+function undoDelete() {
+  if (!_undoStack.length) return;
+  const {type, data, index} = _undoStack.pop();
+  if (type === 'grants')      { localGrants.splice(index, 0, data);  refreshAll(); }
+  else if (type === 'cb')     { cbData.splice(index, 0, data);       refreshAll(); }
+  else if (type === 'pres')   { presData.splice(index, 0, data);     refreshAll(); }
+  else if (type === 'rso')    { rsoData.splice(index, 0, data);      buildRSOCharts(); renderRSOTable(rsoData); }
+  document.getElementById('undoBar').classList.remove('show');
+  showToast('↩ Row restored!');
+}
+
+/* ── PANEL TOGGLE ─────────────────────────────────────────── */
+function togglePanel(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+
+/* ── QUICK ADD ROW ───────────────────────────────────────── */
+function toggleQuickAdd(section) {
+  const el = document.getElementById(section + 'QA');
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function quickAddGrant() {
+  const title = document.getElementById('qaGrantTitle').value.trim();
+  if (!title) { showToast('⚠ Title is required'); return; }
+  const seq = localGrants.length + 1;
+  const agency = document.getElementById('qaGrantAgency').value || 'Agency';
+  const year = +document.getElementById('qaGrantYear').value || new Date().getFullYear();
+  const amount = +document.getElementById('qaGrantAmount').value || 0;
+  localGrants.push({seq, title, agency, year, amount});
+  refreshAll();
+  document.getElementById('qaGrantTitle').value = '';
+  document.getElementById('qaGrantAmount').value = '';
+  showToast('✅ Grant row added!');
+}
+
+function quickAddCB() {
+  const activity = document.getElementById('qaCBActivity').value.trim();
+  if (!activity) { showToast('⚠ Activity name required'); return; }
+  cbData.unshift({
+    year: +document.getElementById('qaCBYear').value || new Date().getFullYear(),
+    date: document.getElementById('qaCBDate').value || '',
+    activity,
+    venue: document.getElementById('qaCBVenue').value || '',
+    participants: document.getElementById('qaCBPax').value ? +document.getElementById('qaCBPax').value : null,
+    report: false
+  });
+  refreshAll();
+  document.getElementById('qaCBActivity').value = '';
+  showToast('✅ CB row added!');
+}
+
+function quickAddPres() {
+  const name = document.getElementById('qaPresName').value.trim();
+  const title = document.getElementById('qaPresTitle').value.trim();
+  if (!name || !title) { showToast('⚠ Name & Title required'); return; }
+  presData.unshift({
+    year: +document.getElementById('qaPresYear').value || new Date().getFullYear(),
+    name,
+    title,
+    dept: document.getElementById('qaPresDept').value || 'DEPT',
+    subsidy: +document.getElementById('qaPresSubsidy').value || 0,
+    status: document.getElementById('qaPresStatus').value
+  });
+  refreshAll();
+  document.getElementById('qaPresName').value = '';
+  document.getElementById('qaPresTitle').value = '';
+  showToast('✅ Presentation row added!');
+}
+
+function quickAddRSO() {
+  const service = document.getElementById('qaRSOService').value.trim();
+  if (!service) { showToast('⚠ Service name required'); return; }
+  rsoData.unshift({
+    year: +document.getElementById('qaRSOYear').value || new Date().getFullYear(),
+    date: document.getElementById('qaRSODate').value || '',
+    service,
+    title: document.getElementById('qaRSOTitle').value || '',
+    college: document.getElementById('qaRSOCollege').value || ''
+  });
+  buildRSOCharts();
+  renderRSOTable(rsoData);
+  document.getElementById('qaRSOService').value = '';
+  document.getElementById('qaRSOTitle').value = '';
+  showToast('✅ RSO row added!');
+}
+
+/* ── DUPLICATE ROW ───────────────────────────────────────── */
+function dupGrantRow() {
+  if (!localGrants.length) { showToast('⚠ No rows to duplicate'); return; }
+  const last = {...localGrants[localGrants.length - 1]};
+  last.seq = localGrants.length + 1;
+  last.title = last.title + ' (copy)';
+  localGrants.push(last);
+  openGrantsEdit();
+  updateRowCount('grants');
+  showToast('⧉ Row duplicated');
+}
+
+function dupCBRow() {
+  if (!cbData.length) { showToast('⚠ No rows to duplicate'); return; }
+  cbData.unshift({...cbData[0]});
+  openCBEdit();
+  updateRowCount('cb');
+  showToast('⧉ Row duplicated');
+}
+
+function dupPresRow() {
+  if (!presData.length) { showToast('⚠ No rows to duplicate'); return; }
+  presData.unshift({...presData[0]});
+  openPresEdit();
+  updateRowCount('pres');
+  showToast('⧉ Row duplicated');
+}
+
+function dupRSORow() {
+  if (!rsoData.length) { showToast('⚠ No rows to duplicate'); return; }
+  rsoData.unshift({...rsoData[0]});
+  openRSOEdit();
+  updateRowCount('rso');
+  showToast('⧉ Row duplicated');
+}
+
+function dupTrackerRow() {
+  if (!trackerData.rows.length) { showToast('⚠ No rows to duplicate'); return; }
+  const last = trackerData.rows[trackerData.rows.length - 1];
+  const copy = {college: last.college + '_copy', cells: {}};
+  trackerData.years.forEach(y => { copy.cells[y] = [...(last.cells[y] || [0,0,0])]; });
+  trackerData.rows.push(copy);
+  openTrackerEdit();
+  updateRowCount('tracker');
+  showToast('⧉ Row duplicated');
+}
+
+/* ── ROW COUNT ───────────────────────────────────────────── */
+function updateRowCount(section) {
+  const map = {grants: localGrants, cb: cbData, pres: presData, rso: rsoData, tracker: trackerData.rows};
+  const data = map[section];
+  const el = document.getElementById(section + 'RowCount');
+  if (el && data) el.textContent = data.length + ' rows';
+}
+
+/* ── ADD COLUMN ──────────────────────────────────────────── */
+// Extra columns are stored as arrays of {key, label} per section
+let grantExtraCols = [];
+let cbExtraCols = [];
+let presExtraCols = [];
+let rsoExtraCols = [];
+
+function addGrantCol() {
+  const name = document.getElementById('grantsNewColName').value.trim();
+  if (!name) { showToast('⚠ Column name required'); return; }
+  const key = 'extra_' + name.toLowerCase().replace(/\s+/g, '_');
+  grantExtraCols.push({key, label: name});
+  document.getElementById('grantsNewColName').value = '';
+  togglePanel('grantsAddColPanel');
+  openGrantsEdit();
+  showToast('✅ Column "' + name + '" added');
+}
+
+function addCBCol() {
+  const name = document.getElementById('cbNewColName').value.trim();
+  if (!name) { showToast('⚠ Column name required'); return; }
+  const key = 'extra_' + name.toLowerCase().replace(/\s+/g, '_');
+  cbExtraCols.push({key, label: name});
+  document.getElementById('cbNewColName').value = '';
+  togglePanel('cbAddColPanel');
+  openCBEdit();
+  showToast('✅ Column "' + name + '" added');
+}
+
+function addPresCol() {
+  const name = document.getElementById('presNewColName').value.trim();
+  if (!name) { showToast('⚠ Column name required'); return; }
+  const key = 'extra_' + name.toLowerCase().replace(/\s+/g, '_');
+  presExtraCols.push({key, label: name});
+  document.getElementById('presNewColName').value = '';
+  togglePanel('presAddColPanel');
+  openPresEdit();
+  showToast('✅ Column "' + name + '" added');
+}
+
+function addRSOCol() {
+  const name = document.getElementById('rsoNewColName').value.trim();
+  if (!name) { showToast('⚠ Column name required'); return; }
+  const key = 'extra_' + name.toLowerCase().replace(/\s+/g, '_');
+  rsoExtraCols.push({key, label: name});
+  document.getElementById('rsoNewColName').value = '';
+  togglePanel('rsoAddColPanel');
+  openRSOEdit();
+  showToast('✅ Column "' + name + '" added');
+}
+
+/* ── RENAME COLUMN ──────────────────────────────────────── */
+let grantsColHeaders = ['#', 'Project Title', 'Agency', 'Year', 'Amount (₱)'];
+
+function renameGrantCol() {
+  const idx = +document.getElementById('grantsRenameIdx').value;
+  const val = document.getElementById('grantsRenameVal').value.trim();
+  if (!val) { showToast('⚠ Enter new name'); return; }
+  if (idx >= 0 && idx < grantsColHeaders.length) {
+    grantsColHeaders[idx] = val;
+    // Update the edit table header
+    const ths = document.querySelectorAll('#editGrantsBody').length ? 
+      document.querySelector('#modalGrants .edit-table thead tr').querySelectorAll('th') : null;
+    if (ths && ths[idx]) ths[idx].textContent = val;
+    // Also update the display table header
+    const dispThs = document.querySelector('#grantsTable thead tr').querySelectorAll('th');
+    if (dispThs[idx]) dispThs[idx].textContent = val;
+    togglePanel('grantsRenamePanel');
+    showToast('✅ Column renamed to "' + val + '"');
+  } else {
+    showToast('⚠ Index out of range (0-' + (grantsColHeaders.length - 1) + ')');
+  }
+}
+
+/* ── ADD TRACKER YEAR (styled, no prompt) ─────────────────── */
+function addTrackerYearStyled() {
+  const yr = parseInt(document.getElementById('addYearInput').value);
+  if (!yr || isNaN(yr) || yr < 2000 || yr > 2050) { showToast('⚠ Enter a valid year (2000–2050)'); return; }
+  if (trackerData.years.includes(yr)) { showToast('Year ' + yr + ' already exists'); return; }
+  trackerData.years.push(yr);
+  trackerData.years.sort();
+  trackerData.rows.forEach(r => { r.cells[yr] = r.cells[yr] || [0, 0, 0]; });
+  document.getElementById('addYearInput').value = '';
+  togglePanel('addYearPanel');
+  openTrackerEdit();
+  updateRowCount('tracker');
+  showToast('✅ Year ' + yr + ' added');
+}
+
+/* ── ADD / REMOVE KPI CARD ─────────────────────────────────── */
+const kpiClasses = ['kpi-1','kpi-2','kpi-3','kpi-4','kpi-5','kpi-6'];
+
+function addKPICard() {
+  const cls = kpiClasses[overviewKPIs.length % kpiClasses.length];
+  overviewKPIs.push({icon:'📌', label:'New Metric', value:'–', sub:'Edit this card', cls});
+  syncKPIs();
+  showToast('✅ KPI card added! Click it to edit.');
+}
+
+function removeLastKPICard() {
+  if (overviewKPIs.length <= 1) { showToast('⚠ At least 1 KPI card required'); return; }
+  overviewKPIs.pop();
+  syncKPIs();
+  showToast('🗑 KPI card removed');
+}
+
+/* ── FIND & REPLACE ──────────────────────────────────────── */
+function doFnR(section) {
+  const findVal = (document.getElementById(section + 'FnrFind') || {}).value;
+  const replaceVal = (document.getElementById(section + 'FnrReplace') || {}).value || '';
+  if (!findVal) { showToast('⚠ Enter text to find'); return; }
+  const regex = new RegExp(escapeRegex(findVal), 'gi');
+  let count = 0;
+
+  function rep(str) {
+    if (!str) return str;
+    const n = str.replace(regex, replaceVal);
+    if (n !== str) count++;
+    return n;
+  }
+
+  if (section === 'grants') {
+    localGrants.forEach(g => { g.title = rep(g.title); g.agency = rep(g.agency); });
+    refreshAll();
+  } else if (section === 'cb') {
+    cbData.forEach(r => { r.activity = rep(r.activity); r.venue = rep(r.venue); r.date = rep(r.date); });
+    refreshAll();
+  } else if (section === 'pres') {
+    presData.forEach(r => { r.name = rep(r.name); r.title = rep(r.title); r.dept = rep(r.dept); });
+    refreshAll();
+  } else if (section === 'rso') {
+    rsoData.forEach(r => { r.service = rep(r.service); r.title = rep(r.title); r.college = rep(r.college); });
+    buildRSOCharts();
+    renderRSOTable(rsoData);
+  }
+  togglePanel(section + 'FnrPanel');
+  showToast(count > 0 ? '✅ ' + count + ' replacement(s) made' : '⚠ No matches found');
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/* ── SORTABLE COLUMNS ────────────────────────────────────── */
+let _sortState = {};
+
+function makeSortable(tableId, data, renderFn, cols) {
+  // cols: array of {key, numeric}
+  const tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  const ths = tbl.querySelectorAll('thead th');
+  ths.forEach((th, i) => {
+    if (!cols[i]) return;
+    th.classList.add('sortable');
+    th.addEventListener('click', () => {
+      const col = cols[i];
+      const key = tableId + '_' + i;
+      const asc = !_sortState[key];
+      _sortState[key] = asc;
+      // Reset all headers
+      ths.forEach(t => { t.classList.remove('sort-asc','sort-desc'); });
+      th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+      data.sort((a, b) => {
+        let va = a[col.key], vb = b[col.key];
+        if (col.numeric) { va = +va || 0; vb = +vb || 0; return asc ? va - vb : vb - va; }
+        return asc ? String(va||'').localeCompare(String(vb||'')) : String(vb||'').localeCompare(String(va||''));
+      });
+      renderFn(data);
+    });
+  });
+}
+
+/* ── INLINE CELL EDITING (double-click on main tables) ──── */
+function makeInlineEditable(tableId, data, renderFn, fieldMap) {
+  // fieldMap: [null, 'title', 'agency', 'year', 'amount', null] (null = not editable)
+  const tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  tbl.addEventListener('dblclick', e => {
+    const td = e.target.closest('td');
+    if (!td) return;
+    const tr = td.closest('tr');
+    if (!tr || !tr.parentElement || tr.parentElement.tagName !== 'TBODY') return;
+    const rowIdx = [...tr.parentElement.children].indexOf(tr);
+    const colIdx = [...tr.children].indexOf(td);
+    if (!fieldMap[colIdx] || rowIdx >= data.length) return;
+    const field = fieldMap[colIdx];
+    const original = data[rowIdx][field];
+    const input = document.createElement('input');
+    input.className = 'cell-input';
+    input.value = original || '';
+    td.innerHTML = '';
+    td.appendChild(input);
+    input.focus();
+    input.select();
+    function commit() {
+      const val = input.value.trim();
+      const numeric = ['year','amount','subsidy','participants'].includes(field);
+      data[rowIdx][field] = numeric ? (+val || 0) : val;
+      refreshAll && refreshAll();
+      buildRSOCharts && buildRSOCharts();
+      renderRSOTable && renderRSOTable(rsoData);
+      showToast('✅ Cell updated');
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e2 => {
+      if (e2.key === 'Enter') { e2.preventDefault(); commit(); input.blur(); }
+      if (e2.key === 'Escape') { data[rowIdx][field] = original; renderFn(data); }
+    });
+  });
+}
+
+/* ── COLUMN VISIBILITY (Grants) ─────────────────────────── */
+let grantsHiddenCols = new Set();
+
+function renderGrantsColToggle() {
+  const panel = document.getElementById('grantsColPanel');
+  if (!panel) return;
+  const headers = ['#', 'Project Title', 'Agency', 'Year', 'Amount (₱)'];
+  panel.innerHTML = '<span style="font-size:12px;font-weight:700;color:#374151;margin-right:4px">Show/Hide:</span>' +
+    headers.map((h, i) =>
+      `<label><input type="checkbox" ${!grantsHiddenCols.has(i) ? 'checked' : ''} onchange="toggleGrantsCol(${i},this.checked)"> ${h}</label>`
+    ).join('');
+}
+
+function toggleGrantsCol(colIdx, visible) {
+  if (visible) grantsHiddenCols.delete(colIdx);
+  else grantsHiddenCols.add(colIdx);
+  applyGrantsColVisibility();
+}
+
+function applyGrantsColVisibility() {
+  const tbl = document.getElementById('grantsTable');
+  if (!tbl) return;
+  tbl.querySelectorAll('tr').forEach(tr => {
+    [...tr.children].forEach((cell, i) => {
+      cell.style.display = grantsHiddenCols.has(i) ? 'none' : '';
+    });
+  });
+}
+
+/* ── PATCH EXISTING DELETE FUNCTIONS to support Undo ────── */
+const _origDeleteGrantRow = deleteGrantRow;
+function deleteGrantRow(i) {
+  const deleted = localGrants[i];
+  pushUndo('grants', {...deleted}, i);
+  _origDeleteGrantRow(i);
+}
+
+const _origDeleteCBRow = deleteCBRow;
+function deleteCBRow(i) {
+  const deleted = cbData[i];
+  pushUndo('cb', {...deleted}, i);
+  _origDeleteCBRow(i);
+}
+
+const _origDeletePresRow = deletePresRow;
+function deletePresRow(i) {
+  const deleted = presData[i];
+  pushUndo('pres', {...deleted}, i);
+  _origDeletePresRow(i);
+}
+
+const _origDeleteRSORow = deleteRSORow;
+function deleteRSORow(i) {
+  const deleted = rsoData[i];
+  pushUndo('rso', {...deleted}, i);
+  _origDeleteRSORow(i);
+}
+
+/* ── PATCH EDIT MODALS to show row count ────────────────── */
+const _origOpenGrantsEdit = openGrantsEdit;
+function openGrantsEdit() {
+  _origOpenGrantsEdit();
+  // Add extra cols to the header
+  if (grantExtraCols.length) {
+    const thead = document.querySelector('#modalGrants .edit-table thead tr');
+    const existingExtras = thead.querySelectorAll('.extra-col-th');
+    existingExtras.forEach(e => e.remove());
+    grantExtraCols.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'extra-col-th';
+      th.innerHTML = col.label + ' <span style="cursor:pointer;color:#dc2626" onclick="removeGrantCol(\''+col.key+'\')">✕</span>';
+      thead.insertBefore(th, thead.lastElementChild);
+    });
+    // Add inputs to each row
+    const rows = document.querySelectorAll('#editGrantsBody tr');
+    rows.forEach((tr, i) => {
+      const delBtn = tr.lastElementChild;
+      const existingExtras2 = tr.querySelectorAll('.extra-col-td');
+      existingExtras2.forEach(e => e.remove());
+      grantExtraCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = 'extra-col-td';
+        td.innerHTML = `<input value="${esc(localGrants[i] && localGrants[i][col.key] || '')}" id="g_${col.key}_${i}">`;
+        tr.insertBefore(td, delBtn);
+      });
+    });
+  }
+  updateRowCount('grants');
+}
+
+function removeGrantCol(key) {
+  grantExtraCols = grantExtraCols.filter(c => c.key !== key);
+  localGrants.forEach(g => delete g[key]);
+  openGrantsEdit();
+  showToast('🗑 Column removed');
+}
+
+const _origOpenCBEdit = openCBEdit;
+function openCBEdit() {
+  _origOpenCBEdit();
+  if (cbExtraCols.length) {
+    const thead = document.querySelector('#modalCB .edit-table thead tr');
+    const existingExtras = thead.querySelectorAll('.extra-col-th');
+    existingExtras.forEach(e => e.remove());
+    cbExtraCols.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'extra-col-th';
+      th.innerHTML = col.label + ' <span style="cursor:pointer;color:#dc2626" onclick="removeCBCol(\''+col.key+'\')">✕</span>';
+      thead.insertBefore(th, thead.lastElementChild);
+    });
+    const rows = document.querySelectorAll('#editCBBody tr');
+    rows.forEach((tr, i) => {
+      const delBtn = tr.lastElementChild;
+      const existingExtras2 = tr.querySelectorAll('.extra-col-td');
+      existingExtras2.forEach(e => e.remove());
+      cbExtraCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = 'extra-col-td';
+        td.innerHTML = `<input value="${esc(cbData[i] && cbData[i][col.key] || '')}" id="cb_${col.key}_${i}">`;
+        tr.insertBefore(td, delBtn);
+      });
+    });
+  }
+  updateRowCount('cb');
+}
+
+function removeCBCol(key) {
+  cbExtraCols = cbExtraCols.filter(c => c.key !== key);
+  cbData.forEach(r => delete r[key]);
+  openCBEdit();
+  showToast('🗑 Column removed');
+}
+
+const _origOpenPresEdit = openPresEdit;
+function openPresEdit() {
+  _origOpenPresEdit();
+  if (presExtraCols.length) {
+    const thead = document.querySelector('#modalPres .edit-table thead tr');
+    const existingExtras = thead.querySelectorAll('.extra-col-th');
+    existingExtras.forEach(e => e.remove());
+    presExtraCols.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'extra-col-th';
+      th.innerHTML = col.label + ' <span style="cursor:pointer;color:#dc2626" onclick="removePresCol(\''+col.key+'\')">✕</span>';
+      thead.insertBefore(th, thead.lastElementChild);
+    });
+    const rows = document.querySelectorAll('#editPresBody tr');
+    rows.forEach((tr, i) => {
+      const delBtn = tr.lastElementChild;
+      const existingExtras2 = tr.querySelectorAll('.extra-col-td');
+      existingExtras2.forEach(e => e.remove());
+      presExtraCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = 'extra-col-td';
+        td.innerHTML = `<input value="${esc(presData[i] && presData[i][col.key] || '')}" id="pre_${col.key}_${i}">`;
+        tr.insertBefore(td, delBtn);
+      });
+    });
+  }
+  updateRowCount('pres');
+}
+
+function removePresCol(key) {
+  presExtraCols = presExtraCols.filter(c => c.key !== key);
+  presData.forEach(r => delete r[key]);
+  openPresEdit();
+  showToast('🗑 Column removed');
+}
+
+const _origOpenRSOEdit = openRSOEdit;
+function openRSOEdit() {
+  _origOpenRSOEdit();
+  if (rsoExtraCols.length) {
+    const thead = document.querySelector('#modalRSO .edit-table thead tr');
+    const existingExtras = thead.querySelectorAll('.extra-col-th');
+    existingExtras.forEach(e => e.remove());
+    rsoExtraCols.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'extra-col-th';
+      th.innerHTML = col.label + ' <span style="cursor:pointer;color:#dc2626" onclick="removeRSOCol(\''+col.key+'\')">✕</span>';
+      thead.insertBefore(th, thead.lastElementChild);
+    });
+    const rows = document.querySelectorAll('#editRSOBody tr');
+    rows.forEach((tr, i) => {
+      const delBtn = tr.lastElementChild;
+      const existingExtras2 = tr.querySelectorAll('.extra-col-td');
+      existingExtras2.forEach(e => e.remove());
+      rsoExtraCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = 'extra-col-td';
+        td.innerHTML = `<input value="${esc(rsoData[i] && rsoData[i][col.key] || '')}" id="rso_${col.key}_${i}">`;
+        tr.insertBefore(td, delBtn);
+      });
+    });
+  }
+  updateRowCount('rso');
+}
+
+function removeRSOCol(key) {
+  rsoExtraCols = rsoExtraCols.filter(c => c.key !== key);
+  rsoData.forEach(r => delete r[key]);
+  openRSOEdit();
+  showToast('🗑 Column removed');
+}
+
+/* ── PATCH SAVE FUNCTIONS to persist extra cols ─────────── */
+const _origSaveGrants = saveGrants;
+function saveGrants() {
+  // Save extra col values before delegating
+  const rows = document.getElementById('editGrantsBody').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    grantExtraCols.forEach(col => {
+      const inp = document.getElementById('g_' + col.key + '_' + i);
+      if (inp && localGrants[i]) localGrants[i][col.key] = inp.value;
+    });
+  });
+  _origSaveGrants();
+}
+
+const _origSaveCB = saveCB;
+function saveCB() {
+  const rows = document.getElementById('editCBBody').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    cbExtraCols.forEach(col => {
+      const inp = document.getElementById('cb_' + col.key + '_' + i);
+      if (inp && cbData[i]) cbData[i][col.key] = inp.value;
+    });
+  });
+  _origSaveCB();
+}
+
+const _origSavePres = savePres;
+function savePres() {
+  const rows = document.getElementById('editPresBody').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    presExtraCols.forEach(col => {
+      const inp = document.getElementById('pre_' + col.key + '_' + i);
+      if (inp && presData[i]) presData[i][col.key] = inp.value;
+    });
+  });
+  _origSavePres();
+}
+
+const _origSaveRSO = saveRSO;
+function saveRSO() {
+  const rows = document.getElementById('editRSOBody').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    rsoExtraCols.forEach(col => {
+      const inp = document.getElementById('rso_' + col.key + '_' + i);
+      if (inp && rsoData[i]) rsoData[i][col.key] = inp.value;
+    });
+  });
+  _origSaveRSO();
+}
+
+/* ── INIT ENHANCEMENTS (runs after existing init) ─────────── */
+setTimeout(() => {
+  // Sortable columns
+  makeSortable('grantsTable', localGrants, renderGrants, [
+    null, {key:'title'}, {key:'agency'}, {key:'year',numeric:true}, {key:'amount',numeric:true}
+  ]);
+  makeSortable('cbTable', cbData, renderCBTable, [
+    {key:'year',numeric:true}, {key:'date'}, {key:'activity'}, {key:'venue'}, {key:'participants',numeric:true}, null
+  ]);
+  makeSortable('presTable', presData, renderPresTable, [
+    {key:'year',numeric:true}, {key:'name'}, {key:'title'}, {key:'dept'}, {key:'subsidy',numeric:true}, {key:'status'}
+  ]);
+
+  // Inline double-click editing
+  makeInlineEditable('grantsTable', localGrants, renderGrants,
+    [null, 'title', 'agency', 'year', 'amount']);
+  makeInlineEditable('cbTable', cbData, renderCBTable,
+    ['year', 'date', 'activity', 'venue', 'participants', null]);
+  makeInlineEditable('presTable', presData, renderPresTable,
+    ['year', 'name', 'title', 'dept', 'subsidy', 'status']);
+  makeInlineEditable('rsoTable', rsoData, (d) => { buildRSOCharts(); renderRSOTable(d); },
+    [null, 'year', 'date', 'service', 'title', 'college']);
+
+  // Tooltip hints on table headers
+  const grantsThs = document.querySelectorAll('#grantsTable thead th');
+  grantsThs.forEach(th => { th.title = 'Click to sort · Double-click cell to edit'; });
+  const cbThs = document.querySelectorAll('#cbTable thead th');
+  cbThs.forEach(th => { th.title = 'Click to sort · Double-click cell to edit'; });
+
+  showToast('✅ Dashboard v4 loaded — double-click any cell to edit inline!');
+}, 500);
+
+
+/* ══════════════════════════════════════════════════════════
+   AUTH SYSTEM — Role-gated dashboard
+   Roles: superadmin | admin | viewer
+   ══════════════════════════════════════════════════════════ */
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║           USER ACCOUNTS — EDIT HERE                      ║
+   ║  Add, remove or change users below.                      ║
+   ║  Roles:  superadmin | admin | viewer                     ║
+   ║  superadmin = everything incl. manage users              ║
+   ║  admin      = edit data, export, backup                  ║
+   ║  viewer     = read-only, no edits or exports             ║
+   ╚══════════════════════════════════════════════════════════╝ */
+let AUTH_USERS = [
+  { username: 'superadmin', password: 'admin123',  role: 'superadmin', name: 'Super Admin'  },
+  { username: 'admin',      password: 'admin123',  role: 'admin',      name: 'Admin User'   },
+  { username: 'viewer',     password: 'viewer123', role: 'viewer',     name: 'Viewer'       },
+  // ── Add more users below this line ──────────────────────────
+  // { username: 'juan',    password: 'mypassword', role: 'admin',   name: 'Juan dela Cruz' },
+  // { username: 'maria',   password: 'pass2025',   role: 'viewer',  name: 'Maria Santos'   },
+];
+/* ══════════════════════════════════════════════════════════ */
+
+let currentUser = null; // {username, role, name}
+
+/* users loaded from hardcoded array above */
+
+
+/* ── Password eye toggle ─────────────────────────────────── */
+function togglePwEye(){
+  const inp = document.getElementById('loginPass');
+  const btn = document.getElementById('pwEyeBtn');
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    btn.textContent = '🙈';
+    btn.title = 'Hide password';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+    btn.title = 'Show password';
+  }
+  inp.focus();
+}
+/* ── Login logic ─────────────────────────────────────── */
+async function doLogin(){
+  const uEl = document.getElementById('loginUser');
+  const pEl = document.getElementById('loginPass');
+  const errEl = document.getElementById('authErr');
+  const loadEl = document.getElementById('authLoading');
+  const u = uEl.value.trim();
+  const p = pEl.value;
+
+  errEl.classList.remove('show');
+  loadEl.classList.add('show');
+  await new Promise(r => setTimeout(r, 180)); // brief UX delay
+  loadEl.classList.remove('show');
+
+  const match = AUTH_USERS.find(a => a.username === u && a.password === p);
+  if(!match){
+    errEl.textContent = 'Incorrect username or password.';
+    errEl.classList.add('show');
+    pEl.value = '';
+    pEl.focus();
+    return;
+  }
+
+  currentUser = match;
+  sessionStorage.setItem('rso_session', JSON.stringify({username:match.username, role:match.role, name:match.name}));
+  applyRole(match);
+  document.getElementById('authOverlay').style.display = 'none';
+  showToast('👋 Welcome, ' + match.name + '! Logged in as ' + match.role);
+}
+
+/* ── Auto-restore session ────────────────────────────── */
+async function tryAutoLogin(){
+  const saved = sessionStorage.getItem('rso_session');
+  if(saved){
+    try{
+      const s = JSON.parse(saved);
+      const match = AUTH_USERS.find(a => a.username === s.username && a.role === s.role);
+      if(match){ currentUser = match; applyRole(match); document.getElementById('authOverlay').style.display = 'none'; return; }
+    } catch(e){}
+  }
+  // Show login
+  document.getElementById('authOverlay').style.display = 'flex';
+  setTimeout(()=>document.getElementById('loginUser').focus(), 100);
+}
+
+/* ── Logout ──────────────────────────────────────────── */
+function doLogout(){
+  if(!confirm('Log out?')) return;
+  currentUser = null;
+  sessionStorage.removeItem('rso_session');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('authErr').classList.remove('show');
+  document.getElementById('authOverlay').style.display = 'flex';
+  setTimeout(()=>document.getElementById('loginUser').focus(), 100);
+}
+
+/* ── Apply role restrictions ─────────────────────────── */
+function applyRole(user){
+  const role = user.role; // superadmin | admin | viewer
+
+  // Sidebar user display
+  document.getElementById('sbUserName').textContent = user.name || user.username;
+  const badge = document.getElementById('sbRoleBadge');
+  badge.textContent = role;
+  badge.className = 'sb-role-badge role-' + role;
+
+  // Show/hide superadmin nav
+  document.getElementById('sbAdminNav').style.display = (role === 'superadmin') ? 'block' : 'none';
+
+  // Viewer: hide all edit/export buttons
+  if(role === 'viewer'){
+    hideForViewer();
+  } else {
+    showForEditor();
+  }
+}
+
+function hideForViewer(){
+  // Hide all edit, add, delete, export buttons
+  document.querySelectorAll(
+    '.btn-edit, .btn-green, .btn-teal, .btn-red, .btn-primary, .qa-toggle, .bulk-bar, .fnr-panel'
+  ).forEach(el => { el.style.display = 'none'; });
+  // Also hide inline double-click editing
+  document.querySelectorAll('td').forEach(td => td.style.pointerEvents = 'none');
+  // Hide quick-add bars
+  document.querySelectorAll('.quick-add-bar').forEach(el => el.style.display='none');
+  // Override openModal to block
+  window._viewerBlocked = true;
+}
+
+function showForEditor(){
+  window._viewerBlocked = false;
+  document.querySelectorAll(
+    '.btn-edit, .btn-green, .btn-teal, .btn-red, .btn-primary, .qa-toggle'
+  ).forEach(el => { el.style.display = ''; });
+  document.querySelectorAll('td').forEach(td => td.style.pointerEvents = '');
+}
+
+/* ── Guard openModal for viewer ──────────────────────── */
+const __authGuardOpen = openModal;
+function openModal(id){
+  if(window._viewerBlocked){ showToast('🔒 View-only mode — contact an Admin'); return; }
+  __authGuardOpen(id);
+}
+
+/* ── User Manager (superadmin) ───────────────────────── */
+function openUserMgr(){
+  renderUserList();
+  document.getElementById('userMgrOverlay').classList.add('open');
+}
+function closeUserMgr(){
+  document.getElementById('userMgrOverlay').classList.remove('open');
+}
+function renderUserList(){
+  const body = document.getElementById('userListBody');
+  body.innerHTML = '';
+  AUTH_USERS.forEach((u,i)=>{
+    body.innerHTML += `<div class="user-row" id="urow_${i}">
+      <input type="text"     id="u_name_${i}"  value="${esc(u.username)}"  placeholder="username">
+      <input type="password" id="u_pass_${i}"  value="${esc(u.password)}"  placeholder="password">
+      <select id="u_role_${i}">
+        <option value="superadmin" ${u.role==='superadmin'?'selected':''}>superadmin</option>
+        <option value="admin"      ${u.role==='admin'     ?'selected':''}>admin</option>
+        <option value="viewer"     ${u.role==='viewer'    ?'selected':''}>viewer</option>
+      </select>
+      <button class="btn btn-red btn-icon" onclick="deleteUserRow(${i})">🗑</button>
+    </div>`;
+  });
+}
+function addUserRow(){
+  AUTH_USERS.push({username:'newuser',password:'pass123',role:'viewer',name:'New User'});
+  renderUserList();
+}
+function deleteUserRow(i){
+  if(AUTH_USERS[i] && AUTH_USERS[i].username === currentUser.username){ showToast('⚠ Cannot delete yourself'); return; }
+  AUTH_USERS.splice(i,1);
+  renderUserList();
+}
+function saveUserMgr(){
+  const rows = document.querySelectorAll('#userListBody .user-row');
+  const updated = [];
+  rows.forEach((r,i)=>{
+    const uname = document.getElementById('u_name_'+i);
+    const upass = document.getElementById('u_pass_'+i);
+    const urole = document.getElementById('u_role_'+i);
+    if(!uname||!upass||!urole) return;
+    updated.push({username:uname.value.trim(),password:upass.value,role:urole.value,name:uname.value.trim()});
+  });
+  if(!updated.length){ showToast('⚠ No users to save'); return; }
+  AUTH_USERS = updated;
+  closeUserMgr();
+  showToast('✅ Users updated for this session. Export users.json to make permanent.');
+}
+function exportUsersJSON(){
+  saveUserMgr();
+  // Generate a ready-to-paste JS snippet
+  const lines = AUTH_USERS.map(u =>
+    \`  { username: '\${u.username}', password: '\${u.password}', role: '\${u.role}', name: '\${u.name}' }\`
+  ).join(',\n');
+  const snippet = \`let AUTH_USERS = [\n\${lines}\n];\`;
+  const blob = new Blob([snippet], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AUTH_USERS_snippet.txt';
+  a.click();
+  showToast('✅ Snippet downloaded — paste it into the HTML file to save permanently!');
+}
+
+/* ── Kick off auth on page load ──────────────────────── */
+// Replace the existing init call sequence with auth-gated version
+document.addEventListener('DOMContentLoaded', () => {
+  tryAutoLogin();
+});
+
+</script>
+  <!-- Undo bar -->
+  <div class="undo-bar" id="undoBar">
+    <span id="undoMsg">Row deleted</span>
+    <button class="undo-btn" onclick="undoDelete()">↩ Undo</button>
+  </div>
+</body>
+</html>
